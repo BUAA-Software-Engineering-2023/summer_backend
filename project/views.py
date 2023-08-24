@@ -68,3 +68,12 @@ def get_single_project_view(request, id):
         return Response(data=project_json, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({'detail': '项目获取失败,' + e.args[0]}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def get_deleted_project_view(request):
+    try:
+        projects_json = ProjectSerializer(instance=Project.objects.filter(is_deleted=True), many=True).data
+        return Response(data=projects_json, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({'detail': '项目获取失败,' + e.args[0]}, status=status.HTTP_400_BAD_REQUEST)
