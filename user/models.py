@@ -1,7 +1,8 @@
 from django.db import models
+from models import SoftDeleteModel
 
-# Create your models here.
-class User(models.Model):
+
+class User(SoftDeleteModel):
     email = models.EmailField('邮箱地址', unique=True)
     name = models.CharField('姓名', max_length=40)
     nickname = models.CharField('昵称', max_length=40)
