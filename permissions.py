@@ -1,5 +1,6 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
+from project.models import Project
 from team.models import TeamMember
 
 
@@ -21,6 +22,7 @@ class IsAdminOrMemberReadOnlyForTeam(BasePermission):
         except TeamMember.DoesNotExist:
             return False
 
+
 class IsAdminForTeam(BasePermission):
     def has_permission(self, request, view):
         if not request.user:
@@ -33,6 +35,7 @@ class IsAdminForTeam(BasePermission):
             return role == 'admin' or role == 'creator'
         except TeamMember.DoesNotExist:
             return False
+
 
 class IsCreatorForTeam(BasePermission):
     def has_permission(self, request, view):
@@ -47,8 +50,10 @@ class IsCreatorForTeam(BasePermission):
         except TeamMember.DoesNotExist:
             return False
 
+
 class IsAdminForTeamInvite(BasePermission):
     message = '请联系管理员'
+
     def has_permission(self, request, view):
         if not request.user:
             return False
@@ -59,3 +64,26 @@ class IsAdminForTeamInvite(BasePermission):
             return role == 'admin' or role == 'creator'
         except TeamMember.DoesNotExist:
             return False
+
+
+class IsMemberForProject(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user:
+            return False
+        team = request.data.get('team')
+        if team:
+            try:
+                TeamMember.objects.get(team=team, member=request.user)
+                return True
+            except TeamMember.DoesNotExist:
+                return False
+        else:
+            kwargs = view.kwargs
+            pk = kwargs.get('pk')
+            try:
+                project = Project.objects.get(id=pk)
+                team = project.team
+                TeamMember.objects.get(team=team, member=request.user)
+                return True
+            except TeamMember.DoesNotExist:
+                return False
