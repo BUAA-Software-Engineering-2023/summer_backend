@@ -1,14 +1,61 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
+from team.models import TeamMember
+
 
 class IsAuthenticated(BasePermission):
     def has_permission(self, request, view):
         return request.user
 
 
-class IsAuthenticatedOrReadOnly(BasePermission):
+class IsAdminOrMemberReadOnlyForTeam(BasePermission):
     def has_permission(self, request, view):
-        return (
-            request.method in SAFE_METHODS or
-            request.user
-        )
+        if not request.user:
+            return False
+        kwargs = view.kwargs
+        pk = kwargs.get('pk')
+        try:
+            relation = TeamMember.objects.get(team=pk, member=request.user)
+            role = relation.role
+            return role == 'admin' or role == 'creator' or request.method in SAFE_METHODS
+        except TeamMember.DoesNotExist:
+            return False
+
+class IsAdminForTeam(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user:
+            return False
+        kwargs = view.kwargs
+        pk = kwargs.get('pk')
+        try:
+            relation = TeamMember.objects.get(team=pk, member=request.user)
+            role = relation.role
+            return role == 'admin' or role == 'creator'
+        except TeamMember.DoesNotExist:
+            return False
+
+class IsCreatorForTeam(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user:
+            return False
+        kwargs = view.kwargs
+        pk = kwargs.get('pk')
+        try:
+            relation = TeamMember.objects.get(team=pk, member=request.user)
+            role = relation.role
+            return role == 'creator'
+        except TeamMember.DoesNotExist:
+            return False
+
+class IsAdminForTeamInvite(BasePermission):
+    message = '请联系管理员'
+    def has_permission(self, request, view):
+        if not request.user:
+            return False
+        pk = request.data.get('team')
+        try:
+            relation = TeamMember.objects.get(team=pk, member=request.user)
+            role = relation.role
+            return role == 'admin' or role == 'creator'
+        except TeamMember.DoesNotExist:
+            return False
