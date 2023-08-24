@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
-
+import os
 from summer_backend.logging_config import get_logging_config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -41,7 +41,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'django_filters',
-    'user'
+    'user',
+    'team'
 ]
 
 MIDDLEWARE = [
@@ -65,11 +66,11 @@ WSGI_APPLICATION = 'summer_backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'summer',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'NAME': os.environ.get('DB_NAME', 'summer'),
+        'USER': os.environ.get('DB_USERNAME', 'root'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', 3306),
     }
 }
 
@@ -158,3 +159,11 @@ REST_FRAMEWORK = {
 
 # 取消末尾添加/
 APPEND_SLASH = False
+
+# 缓存设置
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "cache"
+    }
+}
