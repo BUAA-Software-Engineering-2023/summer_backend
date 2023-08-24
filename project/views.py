@@ -77,3 +77,17 @@ def get_deleted_project_view(request):
         return Response(data=projects_json, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({'detail': '项目获取失败,' + e.args[0]}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['PUT'])
+def restore_project_view(request):
+    id = request.data.get('id')
+    try:
+        project = Project.objects.get(id=id)
+        project.is_deleted = False
+        project.save()
+        return Response({'detail': '项目恢复成功'}, status=status.HTTP_200_OK)
+    except Project.DoesNotExist:
+        return Response({'detail': '项目不存在'}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        return Response({'detail': '项目恢复失败,' + e.args[0]}, status=status.HTTP_400_BAD_REQUEST)
