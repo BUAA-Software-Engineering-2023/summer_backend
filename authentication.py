@@ -13,7 +13,7 @@ class JWTAuthentication(BaseAuthentication):
         try:
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms='HS256')
             user_id = payload['id']
-            user = User.objects.get(pk=user_id, is_deleted=False)
+            user = User.objects.get(pk=user_id)
             return user, token
         except jwt.ExpiredSignatureError:
             raise exceptions.AuthenticationFailed('Token已过期')
