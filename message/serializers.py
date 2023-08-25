@@ -7,3 +7,4 @@ class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
         fields = '__all__'
+        extra_kwargs = {"chat_message": {"required": False}, "document": {"required": False}}

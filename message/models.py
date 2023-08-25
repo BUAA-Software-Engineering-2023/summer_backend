@@ -17,5 +17,5 @@ class Message(models.Model):
     create_time = models.DateTimeField('创建时间', auto_now_add=True)
     update_time = models.DateTimeField('活动时间', auto_now=True)
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='接收者', related_name='receiver', blank=True, default=0)
-    chat_message = models.ForeignKey(ChatMessage, on_delete=models.CASCADE, verbose_name='消息', related_name='message', blank=True, default=0)
-    document = models.ForeignKey(Document, on_delete=models.CASCADE, verbose_name='项目文件', related_name='file', blank=True, default=0)
+    chat_message = models.ForeignKey(ChatMessage, on_delete=models.CASCADE, verbose_name='消息', related_name='message', blank=True, null=True)
+    document = models.ForeignKey(Document, on_delete=models.CASCADE, verbose_name='项目文件', related_name='file', blank=True, null=True)
