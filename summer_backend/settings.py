@@ -45,7 +45,8 @@ INSTALLED_APPS = [
     'team',
     'project',
     'chat',
-    'document'
+    'document',
+    'message',
 
 ]
 

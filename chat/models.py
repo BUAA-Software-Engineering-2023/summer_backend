@@ -27,6 +27,7 @@ class ChatMessage(models.Model):
         ('image', '图片'),
         ('file', '文件')
     ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     type = models.CharField(max_length=10, choices=type_choice)
     content = models.TextField()
     chat = models.ManyToManyField(Chat)

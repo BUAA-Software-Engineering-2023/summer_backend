@@ -4,7 +4,6 @@ from rest_framework.response import Response
 
 from permissions import IsMemberForProject
 from project.models import Project
-from project.serializers import ProjectSerializer
 from .serializers import ProjectSerializer
 
 
