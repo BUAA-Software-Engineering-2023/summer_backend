@@ -43,7 +43,8 @@ INSTALLED_APPS = [
     'django_filters',
     'user',
     'team',
-    'project'
+    'project',
+    'chat'
 ]
 
 MIDDLEWARE = [
