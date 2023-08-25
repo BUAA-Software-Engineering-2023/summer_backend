@@ -33,6 +33,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -44,7 +45,8 @@ INSTALLED_APPS = [
     'user',
     'team',
     'project',
-    'chat'
+    'chat',
+    'channels'
 ]
 
 MIDDLEWARE = [
@@ -60,7 +62,7 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'summer_backend.urls'
 
 WSGI_APPLICATION = 'summer_backend.wsgi.application'
-
+ASGI_APPLICATION = 'summer_backend.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -167,5 +169,12 @@ CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.db.DatabaseCache",
         "LOCATION": "cache"
+    }
+}
+
+# channels设置
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
     }
 }

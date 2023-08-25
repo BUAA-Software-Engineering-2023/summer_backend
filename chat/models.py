@@ -16,7 +16,7 @@ class Chat(models.Model):
     update_time = models.DateTimeField(auto_now=True)
 
     def get_latest_message_time(self):
-        latest_message = self.message_set.order_by('-created_time').first()
+        latest_message = self.chatmessage_set.order_by('-created_time').first()
         if latest_message:
             return latest_message.created_time
         return None
@@ -27,9 +27,11 @@ class ChatMessage(models.Model):
         ('image', '图片'),
         ('file', '文件')
     ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     type = models.CharField(max_length=10, choices=type_choice)
     content = models.TextField()
-    chat = models.ManyToManyField(Chat)
+    unread = models.BooleanField(default=True)
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
     created_time = models.DateTimeField(auto_now_add=True)
     update_time = models.DateTimeField(auto_now=True)
