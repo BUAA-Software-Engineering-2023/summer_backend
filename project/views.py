@@ -4,7 +4,7 @@ from rest_framework.response import Response
 
 from permissions import IsMemberForProject
 from project.models import Project
-from project.serializers import ProjectSerializer
+from .serializers import ProjectSerializer
 
 
 # Create your views here.
@@ -47,3 +47,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         instance.is_deleted = True
         instance.save()
+
+
+
+
