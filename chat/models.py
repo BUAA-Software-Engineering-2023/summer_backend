@@ -15,12 +15,6 @@ class Chat(models.Model):
     created_time = models.DateTimeField(auto_now_add=True)
     update_time = models.DateTimeField(auto_now=True)
 
-    def get_latest_message_time(self):
-        latest_message = self.chatmessage_set.order_by('-created_time').first()
-        if latest_message:
-            return latest_message.created_time
-        return None
-
 class ChatMessage(models.Model):
     type_choice = [
         ('text', '文本'),

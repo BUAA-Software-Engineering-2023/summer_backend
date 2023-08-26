@@ -5,14 +5,14 @@ from user.serializers import UserSerializer
 class TeamSerializer(serializers.ModelSerializer):
     class Meta:
         model = Team
-        exclude = ['members']
+        exclude = ['members','is_deleted']
 
 
 class TeamWithMemberSerializer(serializers.ModelSerializer):
     members = serializers.SerializerMethodField()
     class Meta:
         model = Team
-        fields = '__all__'
+        exclude = ['is_deleted']
         extra_kwargs = {'members': {'read_only': True}}
     def get_members(self, team):
         members = team.members.all()
