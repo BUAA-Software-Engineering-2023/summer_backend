@@ -1,5 +1,7 @@
 import uuid
 from django.db import models
+
+from team.models import Team
 from user.models import User
 
 
@@ -11,9 +13,12 @@ class Chat(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
     members = models.ManyToManyField(User)
+    team = models.ForeignKey(Team, on_delete=models.CASCADE)
     type = models.CharField(max_length=10, choices=type_choice)
+    priority = models.IntegerField(default=0)
     created_time = models.DateTimeField(auto_now_add=True)
     update_time = models.DateTimeField(auto_now=True)
+
 
 class ChatMessage(models.Model):
     type_choice = [
@@ -30,3 +35,5 @@ class ChatMessage(models.Model):
     created_time = models.DateTimeField(auto_now_add=True)
     update_time = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        ordering = ['-created_time']
