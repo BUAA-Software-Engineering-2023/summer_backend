@@ -10,13 +10,17 @@ https://docs.djangoproject.com/en/4.2/howto/deployment/asgi/
 import os
 
 from django.core.asgi import get_asgi_application
-from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.routing import ProtocolTypeRouter, URLRouter, ChannelNameRouter
 import chat.routing
+import document.routing
 import message.routing
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'summer_backend.settings')
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
-    "websocket": URLRouter(chat.routing.websocket_urlpatterns + message.routing.websocket_urlpatterns)
+    "websocket": URLRouter(chat.routing.websocket_urlpatterns + message.routing.websocket_urlpatterns + document.routing.websocket_urlpatterns),
+    # "channel": ChannelNameRouter({
+    #     "yroom": document.consumers.TextCollaborationConsumer.as_asgi(),
+    # }),
 })

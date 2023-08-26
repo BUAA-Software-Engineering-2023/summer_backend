@@ -5,4 +5,4 @@ from .models import Project, Document
 class DocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Document
-        fields = ['id', 'title', 'content', 'created_by', 'project', 'created_at', 'last_modified']
+        fields = '__all__'
