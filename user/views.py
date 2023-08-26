@@ -1,8 +1,8 @@
 from django.contrib.auth.hashers import check_password
 from rest_framework.decorators import api_view, authentication_classes
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
-from rest_framework import status
-from rest_framework import generics
+from rest_framework import status, generics, filters
 
 from utils.token import make_token
 from .serializers import *
@@ -29,7 +29,19 @@ def login_password_view(request):
         return Response({'detail': '无效的用户名或密码'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
-class RegisterView(generics.CreateAPIView):
+class UserCreateView(generics.ListCreateAPIView):
     serializer_class = UserSerializer
     authentication_classes = []
     permission_classes = []
+
+
+class UserListView(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    authentication_classes = []
+    permission_classes = []
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['email', 'username', 'name']
+    class CustomLimitOffsetPagination(LimitOffsetPagination):
+        default_limit = 20
+    pagination_class = CustomLimitOffsetPagination
