@@ -1,5 +1,6 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
+from chat.models import Chat
 from project.models import Project
 from team.models import TeamMember
 
@@ -81,9 +82,7 @@ class IsMemberForProject(BasePermission):
             kwargs = view.kwargs
             pk = kwargs.get('pk')
             try:
-                project = Project.objects.get(id=pk)
-                team = project.team
-                TeamMember.objects.get(team=team, member=request.user)
+                TeamMember.objects.get(team__project=pk, member=request.user)
                 return True
             except TeamMember.DoesNotExist:
                 return False
@@ -96,6 +95,14 @@ class IsMemberForChat(BasePermission):
         if team:
             try:
                 TeamMember.objects.get(team=team, member=request.user)
+                return True
+            except TeamMember.DoesNotExist:
+                return False
+        else:
+            kwargs = view.kwargs
+            pk = kwargs.get('pk')
+            try:
+                TeamMember.objects.get(team__chat=pk, member=request.user)
                 return True
             except TeamMember.DoesNotExist:
                 return False

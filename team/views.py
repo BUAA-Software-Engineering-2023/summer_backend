@@ -20,6 +20,10 @@ class TeamListCreateView(generics.ListCreateAPIView):
         team = serializer.save()
         TeamMember.objects.create(team=team, member=user, role='creator')
 
+        # 创建群聊
+        data = self.request.data
+        chat = Chat.objects.create(name=data['name'], team=team, type='group', priority=999)
+        chat.members.set([user])
 
 class TeamRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TeamWithMemberSerializer
@@ -27,6 +31,13 @@ class TeamRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         user = self.request.user
         return Team.objects.filter(members__id=user.id)
+    def perform_update(self, serializer):
+        team = serializer.save()
+        name = self.request.data.get('name')
+        if name:
+            chat = team.chat_set.get(priority=999)
+            chat.name = name
+            chat.save()
 
 @api_view(['POST'])
 @permission_classes([IsAdminForTeam])
@@ -81,6 +92,11 @@ def resolve_invite_view(request, pk):
         team = invite.team
         invitee = invite.invitee
         TeamMember.objects.create(team=team, member=invitee)
+        # 添加到群聊
+        chat = Chat.objects.get(team=team, priority=999)
+        chat.members.add(invitee)
+
+
     invite.status = new_status
     invite.save()
     return Response(TeamInviteSerializer(invite).data, status=status.HTTP_200_OK)
@@ -91,6 +107,9 @@ def remove_member_view(request, pk):
     member = request.data.get('member')
     try:
         relation = TeamMember.objects.get(team=pk, member=member).delete()
+        # 移出群聊
+        chat = Chat.objects.get(team=pk, priority=999)
+        chat.members.remove(member)
     except TeamMember.DoesNotExist:
         return Response({'detail': '无需移除'}, status=status.HTTP_400_BAD_REQUEST)
     return Response(None, status=status.HTTP_200_OK)

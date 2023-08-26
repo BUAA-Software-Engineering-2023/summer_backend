@@ -5,14 +5,8 @@ from rest_framework import generics
 from permissions import *
 from .serializers import *
 from .models import *
-from django.db.models import Max,F
+from django.db.models import Max, F, Subquery
 
-
-def get_latest_message_time(cls):
-    latest_message = cls.chatmessage_set.order_by('-created_time').first()
-    if latest_message:
-        return latest_message.created_time
-    return None
 
 class ChatListView(generics.ListCreateAPIView):
     permission_classes = [IsMemberForChat]
@@ -22,7 +16,7 @@ class ChatListView(generics.ListCreateAPIView):
         user = self.request.user
         return (Chat.objects.filter(members=user)
                 .annotate(last_message_time=Max('chatmessage__created_time'))
-                .order_by(F('last_message_time').desc(nulls_last=True)))
+                .order_by('-priority', F('last_message_time').desc(nulls_last=True)))
     def perform_create(self, serializer):
         name = self.request.data.get('name')
         if not name:
@@ -31,3 +25,39 @@ class ChatListView(generics.ListCreateAPIView):
             name = ','.join(members)
 
         serializer.save(type='group', name=name)
+
+
+class ChatRetrieveView(generics.RetrieveAPIView):
+    permission_classes = [IsMemberForChat]
+    serializer_class = ChatSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        return (Chat.objects.filter(members=user)
+                .annotate(last_message_time=Max('chatmessage__created_time'))
+                .order_by('-priority', F('last_message_time').desc(nulls_last=True)))
+
+@api_view(['GET'])
+def chat_message_view(request, pk):
+    id = request.query_params.get('id')
+    count = int(request.query_params.get('count', 100))
+    search = request.query_params.get('search')
+
+    if search:
+        sub = (ChatMessage.objects.filter(chat=pk)
+            .filter(content__contains=search)
+            .aggregate(max_created_time=Max('created_time')))
+
+        queryset = (ChatMessage.objects.filter(chat=pk)
+                    .filter(content__contains=search)
+                    .filter(created_time__lte=sub['max_created_time']))
+
+    elif id:
+        queryset = (ChatMessage.objects.filter(chat=pk)
+        .filter(created_time__lt=Subquery(
+            ChatMessage.objects.filter(pk=id).values('created_time')
+        )))[:count]
+    else:
+        queryset = ChatMessage.objects.filter(chat=pk)[:count]
+    serializer = ChatMessageSerializer(instance=queryset, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
