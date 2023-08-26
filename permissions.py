@@ -87,3 +87,17 @@ class IsMemberForProject(BasePermission):
                 return True
             except TeamMember.DoesNotExist:
                 return False
+
+
+class IsMemberForChat(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user:
+            return False
+        team = request.data.get('team')
+        if team:
+            try:
+                TeamMember.objects.get(team=team, member=request.user)
+                return True
+            except TeamMember.DoesNotExist:
+                return False
+        return False
