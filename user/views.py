@@ -1,8 +1,8 @@
 from django.contrib.auth.hashers import check_password
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, authentication_classes
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
-from rest_framework import status
-from rest_framework import generics
+from rest_framework import status, generics, filters
 
 from utils.token import make_token
 from .serializers import *
@@ -10,6 +10,7 @@ from .models import *
 
 
 @api_view(['POST'])
+@authentication_classes([])
 def login_password_view(request):
     email = request.data.get('email')
     password = request.data.get('password')
@@ -27,6 +28,20 @@ def login_password_view(request):
     except User.DoesNotExist:
         return Response({'detail': '无效的用户名或密码'}, status=status.HTTP_401_UNAUTHORIZED)
 
-class RegisterView(generics.CreateAPIView):
-    serializer_class = UserSerializer
 
+class UserCreateView(generics.ListCreateAPIView):
+    serializer_class = UserSerializer
+    authentication_classes = []
+    permission_classes = []
+
+
+class UserListView(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    authentication_classes = []
+    permission_classes = []
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['email', 'username', 'name']
+    class CustomLimitOffsetPagination(LimitOffsetPagination):
+        default_limit = 20
+    pagination_class = CustomLimitOffsetPagination

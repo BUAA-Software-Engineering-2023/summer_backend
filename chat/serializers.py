@@ -4,12 +4,13 @@ from user.serializers import UserSerializer
 
 class ChatSerializer(serializers.ModelSerializer):
     members = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), many=True)
+    team = serializers.PrimaryKeyRelatedField(queryset=Team.objects.all())
     class Meta:
         model = Chat
         fields = '__all__'
         extra_kwargs = {
             'name': {'required': False},
-            'type': {'read_only': True}
+            'type': {'read_only': True},
         }
         depth = 2
     def to_representation(self, instance):
