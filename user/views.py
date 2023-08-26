@@ -1,5 +1,5 @@
 from django.contrib.auth.hashers import check_password
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, authentication_classes
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import generics
@@ -10,6 +10,7 @@ from .models import *
 
 
 @api_view(['POST'])
+@authentication_classes([])
 def login_password_view(request):
     email = request.data.get('email')
     password = request.data.get('password')
@@ -27,6 +28,8 @@ def login_password_view(request):
     except User.DoesNotExist:
         return Response({'detail': '无效的用户名或密码'}, status=status.HTTP_401_UNAUTHORIZED)
 
+
 class RegisterView(generics.CreateAPIView):
     serializer_class = UserSerializer
-
+    authentication_classes = []
+    permission_classes = []
