@@ -38,6 +38,7 @@ class ChatRetrieveView(generics.RetrieveAPIView):
                 .order_by('-priority', F('last_message_time').desc(nulls_last=True)))
 
 @api_view(['GET'])
+@permission_classes([IsMemberForChat])
 def chat_message_view(request, pk):
     id = request.query_params.get('id')
     count = int(request.query_params.get('count', 100))
