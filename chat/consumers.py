@@ -59,7 +59,7 @@ class ChatConsumer(JsonWebsocketConsumer):
                 chat.members.add(receiver)
         else:
             try:
-                chat = User.objects.get(pk=chat)
+                chat = Chat.objects.get(pk=chat)
             except:
                 self.send_json({
                     'success': False,
