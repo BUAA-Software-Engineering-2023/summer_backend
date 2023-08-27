@@ -13,7 +13,7 @@ class MessageConsumer(JsonWebsocketConsumer):
             self.close()
             return
 
-        self.chat_group_name = f'chat_{self.user_id}'
+        self.chat_group_name = f'message_{self.user_id}'
         # 每个用户建立一个频道组
         async_to_sync(self.channel_layer.group_add)(
             self.chat_group_name,
@@ -29,6 +29,18 @@ class MessageConsumer(JsonWebsocketConsumer):
             self.chat_group_name,
             self.channel_name
         )
+
+    def receive(self, text_data=None, bytes_data=None, **kwargs):
+        if text_data:
+            try:
+                self.receive_json(self.decode_json(text_data), **kwargs)
+            except:
+                self.send_json({
+                    'success': False,
+                    'detail': '仅支持JSON格式文本'
+                })
+        else:
+            raise ValueError("No text section for incoming WebSocket frame!")
 
     # 从频道组接收到消息后执行方法
     def chat_message(self, event):
