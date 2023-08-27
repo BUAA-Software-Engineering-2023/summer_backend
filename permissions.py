@@ -159,18 +159,12 @@ class IsMemberOrVisitorReadOnlyForDocument(BasePermission):
                 TeamMember.objects.get(team__project=project, member=request.user)
                 return True
             except Exception:
-                if request.data.get('permission') == 'authorized':
+                if request.query_params.get('permission') == 'authorized':
                     return True
                 else:
                     return False
         else:
-            kwargs = view.kwargs
-            pk = kwargs.get('pk')
-            try:
-                TeamMember.objects.get(team__project__document=pk, member=request.user)
+            if request.query_params.get('permission') == 'authorized':
                 return True
-            except Exception:
-                if request.data.get('permission') == 'authorized':
-                    return True
-                else:
-                    return False
+            else:
+                return False
