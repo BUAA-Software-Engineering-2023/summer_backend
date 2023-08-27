@@ -1,5 +1,5 @@
 from rest_framework import status, viewsets
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from permissions import IsMemberForProject
@@ -9,6 +9,7 @@ from .serializers import ProjectSerializer
 
 # Create your views here.
 @api_view(['GET'])
+@permission_classes([IsMemberForProject])
 def get_deleted_project_view(request):
     try:
         projects_json = ProjectSerializer(instance=Project.objects.filter(is_deleted=True), many=True).data
@@ -17,7 +18,8 @@ def get_deleted_project_view(request):
         return Response({'detail': '项目获取失败,' + e.args[0]}, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['PUT'])
+@api_view(['PATCH'])
+@permission_classes([IsMemberForProject])
 def restore_project_view(request):
     id = request.data.get('id')
     try:
@@ -47,7 +49,3 @@ class ProjectViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         instance.is_deleted = True
         instance.save()
-
-
-
-

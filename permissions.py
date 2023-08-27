@@ -1,7 +1,5 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
-from chat.models import Chat
-from project.models import Project
 from team.models import TeamMember
 
 
@@ -87,6 +85,7 @@ class IsMemberForProject(BasePermission):
             except Exception:
                 return False
 
+
 class IsMemberForChat(BasePermission):
     def has_permission(self, request, view):
         if not request.user:
@@ -106,6 +105,7 @@ class IsMemberForChat(BasePermission):
                 return True
             except Exception:
                 return False
+
 
 class IsMemberForDocument(BasePermission):
     def has_permission(self, request, view):
@@ -147,3 +147,30 @@ class IsMemberForDesign(BasePermission):
                 return True
             except Exception:
                 return False
+
+
+class IsMemberOrVisitorReadOnlyForDocument(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user:
+            return False
+        project = request.data.get('project') or request.query_params.get('project')
+        if project:
+            try:
+                TeamMember.objects.get(team__project=project, member=request.user)
+                return True
+            except Exception:
+                if request.data.get('permission') == 'authorized':
+                    return True
+                else:
+                    return False
+        else:
+            kwargs = view.kwargs
+            pk = kwargs.get('pk')
+            try:
+                TeamMember.objects.get(team__project__document=pk, member=request.user)
+                return True
+            except Exception:
+                if request.data.get('permission') == 'authorized':
+                    return True
+                else:
+                    return False

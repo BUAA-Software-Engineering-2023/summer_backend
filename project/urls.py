@@ -3,7 +3,7 @@ from .views import *
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter(trailing_slash=False)
-router.register('projects', ProjectViewSet, basename='project')
+router.register('projects', ProjectViewSet)
 
 urlpatterns = [
     path('project/deleted', get_deleted_project_view),
