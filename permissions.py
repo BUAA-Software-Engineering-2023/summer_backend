@@ -96,13 +96,54 @@ class IsMemberForChat(BasePermission):
             try:
                 TeamMember.objects.get(team=team, member=request.user)
                 return True
-            except TeamMember.DoesNotExist:
+            except Exception:
                 return False
         else:
             kwargs = view.kwargs
             pk = kwargs.get('pk')
             try:
                 TeamMember.objects.get(team__chat=pk, member=request.user)
+                return True
+            except Exception:
+                return False
+
+class IsMemberForDocument(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user:
+            return False
+        project = request.data.get('project') or request.query_params.get('project')
+        if project:
+            try:
+                TeamMember.objects.get(team__project=project, member=request.user)
+                return True
+            except Exception:
+                return False
+        else:
+            kwargs = view.kwargs
+            pk = kwargs.get('pk')
+            try:
+                TeamMember.objects.get(team__project__document=pk, member=request.user)
+                return True
+            except Exception:
+                return False
+
+
+class IsMemberForDesign(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user:
+            return False
+        project = request.data.get('project') or request.query_params.get('project')
+        if project:
+            try:
+                TeamMember.objects.get(team__project=project, member=request.user)
+                return True
+            except Exception:
+                return False
+        else:
+            kwargs = view.kwargs
+            pk = kwargs.get('pk')
+            try:
+                TeamMember.objects.get(team__project__design=pk, member=request.user)
                 return True
             except Exception:
                 return False
