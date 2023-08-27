@@ -8,7 +8,7 @@ router = DefaultRouter(trailing_slash=False)
 router.register('documents', DocumentViewSet)
 
 urlpatterns = [
-    path('documents/authorize', authorize_share_view),
+    path('documents/authorize/<str:pk>', authorize_share_view),
     path('documents/read', read_document_view),
     path('documents/history', get_histories_view),
     path('documents/restore', restore_history_view),
