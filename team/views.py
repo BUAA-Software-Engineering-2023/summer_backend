@@ -5,6 +5,7 @@ from rest_framework import generics
 from permissions import *
 from .serializers import *
 from .models import *
+from django.db.models import Q
 
 
 class TeamListCreateView(generics.ListCreateAPIView):
@@ -73,9 +74,10 @@ class TeamInviteListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         team = self.request.data.get('team')
         invitee = self.request.data.get('invitee')
-        invite = TeamInvite.objects.filter(team=team, invitee=invitee, status__in=['send', 'accept'])
+        invite = TeamInvite.objects.filter(Q(team=team) & Q(invitee=invitee),
+                                           Q(status='send') & ~Q(team__members=invitee))
         if invite:
-            raise serializers.ValidationError('请勿重复发送邀请')
+            raise serializers.ValidationError({'detail': '无需发送邀请'})
         serializer.save()
 
 @api_view(['POST'])
