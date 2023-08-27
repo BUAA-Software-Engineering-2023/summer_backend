@@ -33,6 +33,18 @@ class ChatConsumer(JsonWebsocketConsumer):
             self.channel_name
         )
 
+    def receive(self, text_data=None, bytes_data=None, **kwargs):
+        if text_data:
+            try:
+                self.receive_json(self.decode_json(text_data), **kwargs)
+            except:
+                self.send_json({
+                    'success': False,
+                    'detail': '仅支持JSON格式文本'
+                })
+        else:
+            raise ValueError("No text section for incoming WebSocket frame!")
+
     # 从websocket接收到消息时执行函数
     def receive_json(self, content, **kwargs):
         chat = content.get('chat')
