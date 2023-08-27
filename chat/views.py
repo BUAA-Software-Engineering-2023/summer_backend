@@ -26,6 +26,24 @@ class ChatListView(generics.ListCreateAPIView):
 
         serializer.save(type='group', name=name)
 
+    def list(self, request, *args, **kwargs):
+        ret = super().list(request, *args, **kwargs)
+        try:
+            TeamMember.objects.get(
+                team=self.request.query_params.get('team'),
+                member=self.request.user,
+                role__in=['creator', 'admin']
+            )
+            for chat in ret.data:
+                chat['members'].append({
+                    'id': 0,
+                    'name': '所有人',
+                    'username': 'all'
+                })
+                return ret
+        except TeamMember.DoesNotExist:
+            return ret
+
 
 class ChatRetrieveView(generics.RetrieveAPIView):
     permission_classes = [IsMemberForChat]
