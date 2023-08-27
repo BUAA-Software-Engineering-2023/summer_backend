@@ -1,10 +1,11 @@
 import json
 import logging
-
+import re
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import JsonWebsocketConsumer
 
 from chat.serializers import ChatMessageSerializer
+from message.models import Message
 from user.models import User
 from chat.models import Chat,ChatMessage
 from django.db.models import Q
@@ -89,39 +90,53 @@ class ChatConsumer(JsonWebsocketConsumer):
                     'detail': '无对应聊天'
                 })
                 return
-        content['chat'] = str(chat.id)
 
+        content['chat'] = str(chat.id)
         # 消息存储到数据库
         chat_message = ChatMessage.objects.create(
             type=content.get('type'), content=content.get('content'),
             chat=chat, sender=self.user
         )
 
+        # 判断是否@
+        match_0 = re.search(r'<usertag>\D*?0\D*?</usertag>', content['content'])
+        if match_0:
+            matches = chat.members.all()
+        else:
+            matches = re.findall(r'<usertag>\D*?(\d+)\D*?</usertag>', content['content'])
+            matches = set(matches)
+        # 发送消息
+        for match in matches:
+            if type(match) == str:
+                try:
+                    match = User.objects.get(id=match)
+                except User.DoesNotExist:
+                    self.send_json({
+                        'success': False,
+                        'detail': '用户不存在'
+                    })
+
+            Message.objects.create(
+                content=f'群聊{chat.name}中有消息提到您：\n{content["content"]}',
+                receiver=match,
+                chat_message=chat_message
+            )
+
+        data = ChatMessageSerializer(instance=chat_message).data
+        for key, value in data.items():
+            data[key] = str(value)
         # 发送消息至用户
-        members = chat.members.filter(~Q(pk=self.user.pk))
+        members = chat.members.all()
         for member in members:
             # 发送消息到频道组，频道组调用chat_message方法
             async_to_sync(self.channel_layer.group_send)(
                 f'chat_{member.id}',
-                {'type': 'chat.message', 'data': content}
+                {'type': 'chat.message', 'data': data}
             )
-        data = ChatMessageSerializer(instance=chat_message).data
-        data['id'] = str(data['id'])
-        for key,value in data.items():
-            data[key] = str(value)
-        self.send_json({
-            'success': True,
-            'data': data
-        })
 
 
     # 从频道组接收到消息后执行方法
     def chat_message(self, event):
-        data= event['data']
-
+        data = event['data']
         # 通过websocket发送消息到客户端
-        self.send_json({
-            'content': data.get('content'),
-            'type': data.get('type'),
-            'chat': data.get('chat')
-        })
+        self.send_json(data)
