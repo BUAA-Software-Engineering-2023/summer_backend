@@ -22,7 +22,7 @@ def login_password_view(request):
         user = User.objects.get(email=email)
         if check_password(password, user.password):
             token = make_token({'id': user.id})
-            return Response({'token': token}, status=status.HTTP_200_OK)
+            return Response({'token': token, 'id': user.id}, status=status.HTTP_200_OK)
         else:
             return Response({'detail': '无效的用户名或密码'}, status=status.HTTP_401_UNAUTHORIZED)
     except User.DoesNotExist:
