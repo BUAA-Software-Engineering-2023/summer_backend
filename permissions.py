@@ -141,7 +141,7 @@ class IsMemberForDesign(BasePermission):
                 return False
         else:
             kwargs = view.kwargs
-            pk = kwargs.get('pk')
+            pk = kwargs.get('pk') or request.query_params.get('design') or request.data.get('design')
             try:
                 TeamMember.objects.get(team__project__design=pk, member=request.user)
                 return True
