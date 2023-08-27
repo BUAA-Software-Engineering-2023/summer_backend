@@ -1,5 +1,10 @@
+import json
+import logging
+
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import JsonWebsocketConsumer
+
+from chat.serializers import ChatMessageSerializer
 from user.models import User
 from chat.models import Chat,ChatMessage
 from django.db.models import Q
@@ -37,10 +42,16 @@ class ChatConsumer(JsonWebsocketConsumer):
         if text_data:
             try:
                 self.receive_json(self.decode_json(text_data), **kwargs)
-            except:
+            except json.JSONDecodeError:
                 self.send_json({
                     'success': False,
                     'detail': '仅支持JSON格式文本'
+                })
+            except Exception as e:
+                logging.warning(f'websocket未知错误：{e}')
+                self.send_json({
+                    'success': False,
+                    'detail': '未知错误'
                 })
         else:
             raise ValueError("No text section for incoming WebSocket frame!")
@@ -81,7 +92,7 @@ class ChatConsumer(JsonWebsocketConsumer):
         content['chat'] = str(chat.id)
 
         # 消息存储到数据库
-        ChatMessage.objects.create(
+        chat_message = ChatMessage.objects.create(
             type=content.get('type'), content=content.get('content'),
             chat=chat, sender=self.user
         )
@@ -94,9 +105,13 @@ class ChatConsumer(JsonWebsocketConsumer):
                 f'chat_{member.id}',
                 {'type': 'chat.message', 'data': content}
             )
-
+        data = ChatMessageSerializer(instance=chat_message).data
+        data['id'] = str(data['id'])
+        for key,value in data.items():
+            data[key] = str(value)
         self.send_json({
-            'success': True
+            'success': True,
+            'data': data
         })
 
 
