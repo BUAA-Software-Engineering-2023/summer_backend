@@ -68,7 +68,7 @@ class TeamInviteListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAdminForTeamInvite]
 
     def get_queryset(self):
-        team = self.request.data.get('team')
+        team = self.request.data.get('team') or self.request.query_params.get('team')
         return TeamInvite.objects.filter(team=team)
     def perform_create(self, serializer):
         team = self.request.data.get('team')

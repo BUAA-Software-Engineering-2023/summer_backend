@@ -20,7 +20,7 @@ class IsAdminOrMemberReadOnlyForTeam(BasePermission):
             relation = TeamMember.objects.get(team=pk, member=request.user)
             role = relation.role
             return role == 'admin' or role == 'creator' or request.method in SAFE_METHODS
-        except TeamMember.DoesNotExist:
+        except Exception:
             return False
 
 
@@ -34,7 +34,7 @@ class IsAdminForTeam(BasePermission):
             relation = TeamMember.objects.get(team=pk, member=request.user)
             role = relation.role
             return role == 'admin' or role == 'creator'
-        except TeamMember.DoesNotExist:
+        except Exception:
             return False
 
 
@@ -48,7 +48,7 @@ class IsCreatorForTeam(BasePermission):
             relation = TeamMember.objects.get(team=pk, member=request.user)
             role = relation.role
             return role == 'creator'
-        except TeamMember.DoesNotExist:
+        except Exception:
             return False
 
 
@@ -58,12 +58,12 @@ class IsAdminForTeamInvite(BasePermission):
     def has_permission(self, request, view):
         if not request.user:
             return False
-        pk = request.data.get('team')
+        pk = request.data.get('team') or request.query_params.get('team')
         try:
             relation = TeamMember.objects.get(team=pk, member=request.user)
             role = relation.role
             return role == 'admin' or role == 'creator'
-        except TeamMember.DoesNotExist:
+        except Exception:
             return False
 
 
@@ -71,12 +71,12 @@ class IsMemberForProject(BasePermission):
     def has_permission(self, request, view):
         if not request.user:
             return False
-        team = request.data.get('team')
+        team = request.data.get('team') or request.query_params.get('team')
         if team:
             try:
                 TeamMember.objects.get(team=team, member=request.user)
                 return True
-            except TeamMember.DoesNotExist:
+            except Exception:
                 return False
         else:
             kwargs = view.kwargs
@@ -84,14 +84,14 @@ class IsMemberForProject(BasePermission):
             try:
                 TeamMember.objects.get(team__project=pk, member=request.user)
                 return True
-            except TeamMember.DoesNotExist:
+            except Exception:
                 return False
 
 class IsMemberForChat(BasePermission):
     def has_permission(self, request, view):
         if not request.user:
             return False
-        team = request.data.get('team')
+        team = request.data.get('team') or request.query_params.get('team')
         if team:
             try:
                 TeamMember.objects.get(team=team, member=request.user)
@@ -104,5 +104,5 @@ class IsMemberForChat(BasePermission):
             try:
                 TeamMember.objects.get(team__chat=pk, member=request.user)
                 return True
-            except TeamMember.DoesNotExist:
+            except Exception:
                 return False

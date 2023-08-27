@@ -37,7 +37,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     permission_classes = [IsMemberForProject]
 
     def get_queryset(self):
-        team = self.request.data.get('team')
+        team = self.request.data.get('team') or self.request.query_params.get('team')
         if team:
             projects = Project.objects.filter(team=team, is_deleted=False)
         else:
