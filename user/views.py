@@ -29,7 +29,7 @@ def login_password_view(request):
         return Response({'detail': '无效的用户名或密码'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
-class UserCreateView(generics.ListCreateAPIView):
+class UserCreateView(generics.CreateAPIView):
     serializer_class = UserSerializer
     authentication_classes = []
     permission_classes = []
