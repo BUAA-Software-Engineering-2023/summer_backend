@@ -15,11 +15,12 @@ django.setup()
 from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
 import chat.routing
+import document.routing
 import message.routing
 
 
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
-    "websocket": URLRouter(chat.routing.websocket_urlpatterns + message.routing.websocket_urlpatterns)
+    "websocket": URLRouter(chat.routing.websocket_urlpatterns + message.routing.websocket_urlpatterns + document.routing.websocket_urlpatterns),
 })

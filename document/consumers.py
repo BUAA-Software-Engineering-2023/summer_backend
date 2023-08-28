@@ -1,3 +1,5 @@
+import json
+import logging
 import time
 
 from asgiref.sync import async_to_sync
@@ -39,10 +41,16 @@ class DocumentConsumer(JsonWebsocketConsumer):
         if text_data:
             try:
                 self.receive_json(self.decode_json(text_data), **kwargs)
-            except:
+            except json.JSONDecodeError:
                 self.send_json({
                     'success': False,
                     'detail': '仅支持JSON格式文本'
+                })
+            except Exception as e:
+                logging.warning(f'websocket未知错误：{e}')
+                self.send_json({
+                    'success': False,
+                    'detail': '未知错误'
                 })
         else:
             raise ValueError("No text section for incoming WebSocket frame!")
@@ -61,11 +69,12 @@ class DocumentConsumer(JsonWebsocketConsumer):
                 })
                 return
             sender_name = self.user.name
-            document_name = Document.objects.get(pk=document).title
+            document = Document.objects.get(pk=document)
+            document_name = document.title
             Message.objects.create(
                 receiver=receiver,
                 content=f'{sender_name}在文件{document_name}中@了你‘',
-                document=content.get('document')
+                document=document
             )
 
             self.send_json({
