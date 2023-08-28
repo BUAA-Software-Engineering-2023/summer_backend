@@ -25,14 +25,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-#vn3x5y^af=mbj^887d9jwre=$@fzmh_#t)#c$y6(5u5h%scbx'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -42,7 +43,13 @@ INSTALLED_APPS = [
     'rest_framework',
     'django_filters',
     'user',
-    'team'
+    'team',
+    'project',
+    'chat',
+    'channels',
+    'document',
+    'message',
+    'design'
 ]
 
 MIDDLEWARE = [
@@ -58,7 +65,7 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'summer_backend.urls'
 
 WSGI_APPLICATION = 'summer_backend.wsgi.application'
-
+ASGI_APPLICATION = 'summer_backend.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -165,5 +172,12 @@ CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.db.DatabaseCache",
         "LOCATION": "cache"
+    }
+}
+
+# channels设置
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
     }
 }
