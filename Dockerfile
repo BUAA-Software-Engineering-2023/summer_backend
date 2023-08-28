@@ -22,4 +22,4 @@ ENV DATABASE_PORT=3306
 EXPOSE 8000
 
 # 运行数据库迁移并启动项目
-CMD python manage.py makemigrations && python manage.py migrate && daphne -p 8000 summer_backend.asgi:application
+CMD python manage.py makemigrations && python manage.py migrate && daphne -d 0.0.0.0 -p 8000 summer_backend.asgi:application
