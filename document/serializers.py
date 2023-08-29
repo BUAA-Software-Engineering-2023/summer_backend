@@ -23,5 +23,5 @@ class DocumentWithDataSerializer(serializers.ModelSerializer):
 
     def get_content(self, document):
         latest_data = document.documenthistory_set.filter(is_deleted=False).first()
-        return latest_data.content,
+        return latest_data.content
 

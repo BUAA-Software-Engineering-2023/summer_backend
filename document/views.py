@@ -94,8 +94,6 @@ def save_document_view(request):
         document = Document.objects.get(pk=request.data.get('document'))
     except Document.DoesNotExist:
         return Response(data={'detail': '文档不存在'}, status=status.HTTP_404_NOT_FOUND)
-    if not request.user and not document.is_editable:
-        return Response(data={'detail': '文档不可编辑'}, status=status.HTTP_403_FORBIDDEN)
     content = request.data.get('content')
     document_history = DocumentHistory.objects.create(
         document=document,
