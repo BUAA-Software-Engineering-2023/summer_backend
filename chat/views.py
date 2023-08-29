@@ -24,6 +24,7 @@ class ChatListView(generics.ListCreateAPIView):
                 .annotate(last_message_time=Max('chatmessage__created_time'))
                 .order_by('-priority', F('last_message_time').desc(nulls_last=True)))
     def perform_create(self, serializer):
+        chat_type = self.request.data.get('type') or 'group'
         name = self.request.data.get('name')
         if not name:
             # 未传递群组名称则将成员名拼接作为群组名称
@@ -31,7 +32,7 @@ class ChatListView(generics.ListCreateAPIView):
             members = [member['name'] for member in members]
             name = ','.join(members)
 
-        serializer.save(type='group', name=name)
+        serializer.save(type=chat_type, name=name)
 
     def list(self, request, *args, **kwargs):
         ret = super().list(request, *args, **kwargs)
