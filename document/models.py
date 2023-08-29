@@ -14,6 +14,10 @@ class Document(models.Model):
     update_time = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)
     is_shared = models.BooleanField(default=False)
+    is_editable = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-update_time']
 
 
 class DocumentHistory(models.Model):
@@ -23,3 +27,6 @@ class DocumentHistory(models.Model):
     created_time = models.DateTimeField(auto_now_add=True)
     update_time = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-created_time']
