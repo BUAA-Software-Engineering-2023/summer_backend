@@ -48,7 +48,7 @@ class ChatListView(generics.ListCreateAPIView):
                     'name': '所有人',
                     'username': 'all'
                 })
-                return ret
+            return ret
         except TeamMember.DoesNotExist:
             return ret
 
@@ -66,6 +66,23 @@ class ChatRetrieveView(generics.RetrieveAPIView):
         return (Chat.objects.filter(members=user)
                 .annotate(last_message_time=Max('chatmessage__created_time'))
                 .order_by('-priority', F('last_message_time').desc(nulls_last=True)))
+
+@api_view(['PATCH'])
+@permission_classes([IsMemberForChat])
+def rename_chat_view(request, pk):
+    """
+    重命名群组
+    :param request:
+    :param pk: 群组id
+    :return:
+    """
+    try:
+        chat = Chat.objects.get(pk=pk)
+    except Chat.DoesNotExist:
+        return Response({'detail': '不存在的群组'}, status=status.HTTP_400_BAD_REQUEST)
+    chat.name = request.data.get('name') or chat.name
+    chat.save()
+    return Response(None, status=status.HTTP_200_OK)
 
 @api_view(['PATCH'])
 @permission_classes([IsMemberForChat])
