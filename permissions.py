@@ -1,5 +1,7 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
+from document.models import Document
+from summer_backend.settings import SECRET_KEY
 from team.models import TeamMember
 
 
@@ -78,7 +80,7 @@ class IsMemberForProject(BasePermission):
                 return False
         else:
             kwargs = view.kwargs
-            pk = kwargs.get('pk')
+            pk = kwargs.get('pk') or request.query_params.get('project') or request.data.get('project')
             try:
                 TeamMember.objects.get(team__project=pk, member=request.user)
                 return True
@@ -152,19 +154,56 @@ class IsMemberForDesign(BasePermission):
 class IsMemberOrVisitorReadOnlyForDocument(BasePermission):
     def has_permission(self, request, view):
         if not request.user:
-            return False
-        project = request.data.get('project') or request.query_params.get('project')
-        if project:
             try:
-                TeamMember.objects.get(team__project=project, member=request.user)
-                return True
-            except Exception:
-                if request.query_params.get('permission') == 'authorized':
-                    return True
+                document = request.query_params.get('document') or request.data.get('document')
+                if document:
+                    document = Document.objects.get(pk=document)
+                    return document.is_shared
                 else:
                     return False
+            except Exception:
+                return False
+        document = request.query_params.get('document') or request.data.get('document')
+        if document:
+            try:
+                TeamMember.objects.get(team__project__document=document, member=request.user)
+                return True
+            except TeamMember.DoesNotExist:
+                return False
         else:
-            if request.query_params.get('permission') == 'authorized':
+            return False
+
+
+class IsSecretKeyAuthorized(BasePermission):
+    def has_permission(self, request, view):
+        secret_key = request.data.get('SECRET_KEY') or request.query_params.get('SECRET_KEY')
+        if secret_key:
+            if secret_key == SECRET_KEY:
                 return True
             else:
                 return False
+        else:
+            return False
+
+
+class IsAdminForDocument(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user:
+            return False
+        document = request.data.get('document') or request.query_params.get('document')
+        if document:
+            try:
+                relation = TeamMember.objects.get(team__project__document=document, member=request.user)
+                role = relation.role
+                return role == 'admin' or role == 'creator'
+            except TeamMember.DoesNotExist:
+                return False
+        else:
+            team = request.data.get('team') or request.query_params.get('team')
+            if team:
+                try:
+                    relation = TeamMember.objects.get(team=team, member=request.user)
+                    role = relation.role
+                    return role == 'admin' or role == 'creator'
+                except Exception:
+                    return False
