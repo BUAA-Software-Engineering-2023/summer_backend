@@ -19,7 +19,8 @@ class ChatListView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        return (Chat.objects.filter(members=user)
+        team = self.request.query_params.get('team')
+        return (Chat.objects.filter(members=user, team=team)
                 .annotate(last_message_time=Max('chatmessage__created_time'))
                 .order_by('-priority', F('last_message_time').desc(nulls_last=True)))
     def perform_create(self, serializer):
@@ -62,7 +63,7 @@ class ChatRetrieveView(generics.RetrieveAPIView):
     def get_queryset(self):
         # 群组按最后一条信息发送时间排序
         user = self.request.user
-        return (Chat.objects.filter(members=user)
+        return (Chat.objects.filter(members=user, team=team)
                 .annotate(last_message_time=Max('chatmessage__created_time'))
                 .order_by('-priority', F('last_message_time').desc(nulls_last=True)))
 
