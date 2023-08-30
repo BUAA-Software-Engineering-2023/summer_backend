@@ -1,5 +1,6 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
+from chat.models import Chat
 from document.models import Document
 from summer_backend.settings import SECRET_KEY
 from team.models import TeamMember
@@ -99,15 +100,27 @@ class IsMemberForChat(BasePermission):
                 return True
             except Exception:
                 return False
-        else:
-            kwargs = view.kwargs
-            pk = kwargs.get('pk')
-            try:
-                TeamMember.objects.get(team__chat=pk, member=request.user)
-                return True
-            except Exception:
-                return False
+        return False
 
+class IsMemberOfChat(BasePermission):
+    def has_permission(self, request, view):
+        kwargs = view.kwargs
+        pk = kwargs.get('pk')
+        try:
+            Chat.objects.get(pk=pk, members=request.user)
+            return True
+        except Exception:
+            return False
+
+class IsAdminOfChat(BasePermission):
+    def has_permission(self, request, view):
+        kwargs = view.kwargs
+        pk = kwargs.get('pk')
+        try:
+            Chat.objects.get(pk=pk, admin=request.user)
+            return True
+        except Exception:
+            return False
 
 class IsMemberForDocument(BasePermission):
     def has_permission(self, request, view):
