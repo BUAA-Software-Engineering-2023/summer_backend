@@ -70,18 +70,16 @@ def duplicate_project_view(request):
         for design in designs:
             new_design = Design.objects.create(title=design.title,
                                                project=new_project)
-            design.designhistory_set.all()
-            for history in design.designhistory_set.all():
-                DesignHistory.objects.create(design=new_design,
-                                             content=history.content,
-                                             style=history.style)
+            history = design.designhistory_set.first()
+            DesignHistory.objects.create(design=new_design,
+                                         content=history.content,
+                                         style=history.style)
         for document in project.document_set.all():
             new_document = Document.objects.create(title=document.title,
                                                    project=new_project)
-            document.documenthistory_set.all()
-            for history in document.documenthistory_set.all():
-                DocumentHistory.objects.create(document=new_document,
-                                               content=history.content)
+            history = document.documenthistory_set.filter(is_deleted=False).first()
+            DocumentHistory.objects.create(document=new_document,
+                                           content=history.content)
         for document_folder in project.documentfolder_set.all():
             DocumentFolder.objects.create(name=document_folder.name,
                                           project=new_project)
