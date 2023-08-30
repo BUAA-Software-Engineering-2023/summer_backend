@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import *
+from .models import Document, DocumentHistory
 
 
 class DocumentSerializer(serializers.ModelSerializer):
@@ -12,27 +12,3 @@ class DocumentHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentHistory
         fields = '__all__'
-
-
-class DocumentWithDataSerializer(serializers.ModelSerializer):
-    content = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Document
-        exclude = ['is_deleted']
-
-    def get_content(self, document):
-        latest_data = document.documenthistory_set.filter(is_deleted=False).first()
-        return latest_data.content
-
-
-class DocumentFolderTreeSerializer(serializers.ModelSerializer):
-    documents = serializers.SerializerMethodField()
-
-    class Meta:
-        model = DocumentFolder
-        fields = '__all__'
-
-    def get_documents(self, document_folder):
-        documents = Document.objects.filter(folder=document_folder, is_deleted=False)
-        return DocumentSerializer(documents, many=True).data

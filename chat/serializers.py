@@ -13,7 +13,6 @@ class ChatSerializer(serializers.ModelSerializer):
     team = serializers.PrimaryKeyRelatedField(queryset=Team.objects.all())
     last_message = serializers.SerializerMethodField()
     unread_count = serializers.SerializerMethodField()
-    admin = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
     class Meta:
         model = Chat
         fields = '__all__'

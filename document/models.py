@@ -14,11 +14,6 @@ class Document(models.Model):
     update_time = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)
     is_shared = models.BooleanField(default=False)
-    is_editable = models.BooleanField(default=False)
-    folder = models.ForeignKey('DocumentFolder', on_delete=models.CASCADE, blank=True, null=True)
-
-    class Meta:
-        ordering = ['-update_time']
 
 
 class DocumentHistory(models.Model):
@@ -28,18 +23,3 @@ class DocumentHistory(models.Model):
     created_time = models.DateTimeField(auto_now_add=True)
     update_time = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)
-
-    class Meta:
-        ordering = ['-created_time']
-
-
-class DocumentFolder(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=200)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, blank=True, null=True)
-    created_time = models.DateTimeField(auto_now_add=True)
-    update_time = models.DateTimeField(auto_now_add=True)
-    is_deleted = models.BooleanField(default=False)
-
-    class Meta:
-        ordering = ['-update_time']
