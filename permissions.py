@@ -135,7 +135,7 @@ class IsMemberForDocument(BasePermission):
                 return False
         else:
             kwargs = view.kwargs
-            pk = kwargs.get('pk')
+            pk = kwargs.get('pk') or request.data.get('document') or request.query_params.get('document')
             try:
                 TeamMember.objects.get(team__project__document=pk, member=request.user)
                 return True
