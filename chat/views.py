@@ -26,13 +26,14 @@ class ChatListView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         chat_type = self.request.data.get('type') or 'group'
         name = self.request.data.get('name')
+        admin = self.request.user if chat_type == 'group' else None
         if not name:
             # 未传递群组名称则将成员名拼接作为群组名称
             members = User.objects.filter(id__in=self.request.data.get('members')).distinct().values('name')
             members = [member['name'] for member in members]
             name = ','.join(members)
 
-        serializer.save(type=chat_type, name=name)
+        serializer.save(type=chat_type, name=name, admin=admin)
 
     def list(self, request, *args, **kwargs):
         ret = super().list(request, *args, **kwargs)
@@ -58,7 +59,7 @@ class ChatRetrieveView(generics.RetrieveAPIView):
     """
     获取单个群组信息
     """
-    permission_classes = [IsMemberForChat]
+    permission_classes = [IsMemberOfChat]
     serializer_class = ChatSerializer
 
     def get_queryset(self):
@@ -69,7 +70,7 @@ class ChatRetrieveView(generics.RetrieveAPIView):
                 .order_by('-priority', F('last_message_time').desc(nulls_last=True)))
 
 @api_view(['PATCH'])
-@permission_classes([IsMemberForChat])
+@permission_classes([IsAdminOfChat])
 def rename_chat_view(request, pk):
     """
     重命名群组
@@ -86,7 +87,7 @@ def rename_chat_view(request, pk):
     return Response(None, status=status.HTTP_200_OK)
 
 @api_view(['PATCH'])
-@permission_classes([IsMemberForChat])
+@permission_classes([IsAdminOfChat])
 def add_chat_member_view(request, pk):
     """
     添加群组成员
@@ -107,7 +108,7 @@ def add_chat_member_view(request, pk):
     return Response(None, status=status.HTTP_200_OK)
 
 @api_view(['PATCH'])
-@permission_classes([IsMemberForChat])
+@permission_classes([IsAdminOfChat])
 def remove_chat_member_view(request, pk):
     """
     移除群组成员
@@ -130,7 +131,7 @@ def remove_chat_member_view(request, pk):
     return Response(None, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
-@permission_classes([IsMemberForChat])
+@permission_classes([IsMemberOfChat])
 def get_chat_message_view(request, pk):
     """
     获取群聊的历史消息
@@ -163,7 +164,7 @@ def get_chat_message_view(request, pk):
 
 
 @api_view(['PATCH'])
-@permission_classes([IsMemberForChat])
+@permission_classes([IsMemberOfChat])
 def read_chat_message_view(request, pk):
     """
     将群聊消息均标为已读
@@ -172,4 +173,81 @@ def read_chat_message_view(request, pk):
     :return:
     """
     ChatMessage.objects.filter(chat=pk).update(unread=False)
+    return Response(None, status=status.HTTP_200_OK)
+
+@api_view(['PATCH'])
+@permission_classes([IsMemberOfChat])
+def leave_group_view(request, pk):
+    """
+    普通成员退出群组，若为管理员调用，则随机选择用户作为管理员
+    :param request: 请求
+    :param pk: 群聊id
+    :return:
+    """
+    try:
+        chat = Chat.objects.get(pk=pk)
+    except Chat.DoesNotExist:
+        return Response({'detail':'不存在的群组'}, status=status.HTTP_404_NOT_FOUND)
+    if chat.priority == 999:
+        # 默认群聊，则拒绝变更
+        return Response({'detail': '默认群聊无法退出'}, status=status.HTTP_400_BAD_REQUEST)
+    if chat.type == 'single':
+        return Response({'detail': '私聊无法退出'}, status=status.HTTP_400_BAD_REQUEST)
+    chat.members.remove(request.user)
+    if chat.admin.pk == request.user.pk:
+        # 选择一位用户作为管理员
+        chat.admin = chat.members.first()
+    if not chat.members.count():
+        # 群组不存在成员时，删除群组
+        chat.delete()
+    return Response(None, status=status.HTTP_200_OK)
+
+@api_view(['PATCH'])
+@permission_classes([IsAdminOfChat])
+def admin_leave_group_view(request, pk):
+    """
+    管理员退出群聊
+    :param request: 请求
+    :param pk: 群聊id
+    :return:
+    """
+    admin = request.data.get('admin')
+    try:
+        chat = Chat.objects.get(pk=pk)
+    except Chat.DoesNotExist:
+        return Response({'detail':'不存在的群组'}, status=status.HTTP_404_NOT_FOUND)
+    if chat.priority == 999:
+        # 默认群聊，则拒绝变更
+        return Response({'detail': '默认群聊无法退出'}, status=status.HTTP_400_BAD_REQUEST)
+    chat.members.remove(request.user)
+    if admin:
+        # 指定用户为管理员
+        chat.admin = admin
+    else:
+        # 选择一位用户作为管理员
+        chat.admin = chat.members.first()
+    if not chat.members.count():
+        # 群组不存在成员时，删除群组
+        chat.delete()
+    return Response(None, status=status.HTTP_200_OK)
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAdminOfChat])
+def delete_group_view(request, pk):
+    """
+    管理员删除群聊
+    :param request: 请求
+    :param pk: 群聊id
+    :return:
+    """
+    admin = request.data.get('admin')
+    try:
+        chat = Chat.objects.get(pk=pk)
+    except Chat.DoesNotExist:
+        return Response({'detail': '不存在的群组'}, status=status.HTTP_404_NOT_FOUND)
+    if chat.priority == 999:
+        # 默认群聊，则拒绝变更
+        return Response({'detail': '默认群聊无法退出'}, status=status.HTTP_400_BAD_REQUEST)
+    chat.delete()
     return Response(None, status=status.HTTP_200_OK)
