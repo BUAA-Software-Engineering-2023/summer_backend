@@ -69,7 +69,6 @@ def duplicate_project_view(request):
         designs = project.design_set.all()
         for design in designs:
             new_design = Design.objects.create(title=design.title,
-                                               describe=design.describe,
                                                project=new_project)
             design.designhistory_set.all()
             for history in design.designhistory_set.all():
