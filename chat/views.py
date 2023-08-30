@@ -6,6 +6,8 @@ from permissions import *
 from .serializers import *
 from .models import *
 from django.db.models import Max, F, Subquery
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 
 class ChatListView(generics.ListCreateAPIView):
@@ -232,7 +234,7 @@ def admin_leave_group_view(request, pk):
     return Response(None, status=status.HTTP_200_OK)
 
 
-@api_view(['PATCH'])
+@api_view(['DELETE'])
 @permission_classes([IsAdminOfChat])
 def delete_group_view(request, pk):
     """
@@ -251,3 +253,111 @@ def delete_group_view(request, pk):
         return Response({'detail': '默认群聊无法退出'}, status=status.HTTP_400_BAD_REQUEST)
     chat.delete()
     return Response(None, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+@permission_classes([IsMemberOfChat])
+def forward_chat_message_view(request, pk):
+    channel_layer = get_channel_layer()
+    messages = request.data.get('messages')
+    to = request.data.get('to')
+    if not messages or not to:
+        return Response({'detail': '参数错误'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        to_chat = Chat.objects.get(pk=to)
+    except Chat.DoesNotExist:
+        return Response({'detail': '不存在的群组'}, status=status.HTTP_404_NOT_FOUND)
+    for message in messages:
+        try:
+            # 转发的消息存入数据库
+            chat_message = ChatMessage.objects.get(pk=message)
+            if chat_message.type == 'text':
+                content = (f'<div style="font-size:10px;opacity:0.5;min-width:250px">'
+                           f'<div>转发的消息</div>'
+                           f'<div style="display: flex;justify-content: space-between;">'
+                           f'<div>{chat_message.sender.name}</div>'
+                           f'<div>{chat_message.created_time.strftime("%Y-%m-%d %H:%M:%S")}</div></div></div>'
+                           f'<div style="padding-left: 1em">{chat_message.content}</div>')
+            else:
+                return Response({'detail': '暂不支持非文本消息的转发'}, status=status.HTTP_404_NOT_FOUND)
+            chat_message = ChatMessage.objects.create(
+                chat=to_chat, content=content,
+                sender=request.user, type='text'
+            )
+            # 向群聊用户发送消息
+            for member in to_chat.members.all():
+                # 获取用户所在频道名
+                chat_group_name = f'chat_{member.id}'
+                # 序列化数据
+                data = ChatMessageSerializer(instance=chat_message).data
+                # 额外添加发送人姓名
+                data['sender_name'] = request.user.name
+                # UUID转为字符串
+                for key, value in data.items():
+                    data[key] = str(value)
+                # 发送消息
+                async_to_sync(channel_layer.group_send)(
+                    chat_group_name,
+                    {
+                        'type': 'chat.message',
+                        'data': data
+                    }
+                )
+        except ChatMessage.DoesNotExist:
+            return Response({'detail': '不存在的消息'}, status=status.HTTP_404_NOT_FOUND)
+    return Response(None, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsMemberOfChat])
+def forward_chat_message_together_view(request, pk):
+    channel_layer = get_channel_layer()
+    messages = request.data.get('messages')
+    to = request.data.get('to')
+    if not messages or not to:
+        return Response({'detail': '参数错误'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        to_chat = Chat.objects.get(pk=to)
+    except Chat.DoesNotExist:
+        return Response({'detail': '不存在的群组'}, status=status.HTTP_404_NOT_FOUND)
+    content = ''
+    for message in messages:
+        try:
+            # 转发的消息存入数据库
+            chat_message = ChatMessage.objects.get(pk=message)
+            if chat_message.type == 'text':
+                content += (f'<div style="font-size:10px;opacity:0.5;min-width:250px">'
+                           f'<div>转发的消息</div>'
+                           f'<div style="display: flex;justify-content: space-between;">'
+                           f'<div>{chat_message.sender.name}</div>'
+                           f'<div>{chat_message.created_time.strftime("%Y-%m-%d %H:%M:%S")}</div></div></div>'
+                           f'<div style="padding-left: 1em">{chat_message.content}</div>')
+            else:
+                return Response({'detail': '暂不支持非文本消息的转发'}, status=status.HTTP_404_NOT_FOUND)
+        except ChatMessage.DoesNotExist:
+            return Response({'detail': '不存在的消息'}, status=status.HTTP_404_NOT_FOUND)
+
+    chat_message = ChatMessage.objects.create(
+        chat=to_chat, content=content,
+        sender=request.user, type='text'
+    )
+    # 向群聊用户发送消息
+    for member in to_chat.members.all():
+        # 获取用户所在频道名
+        chat_group_name = f'chat_{member.id}'
+        # 序列化数据
+        data = ChatMessageSerializer(instance=chat_message).data
+        # 额外添加发送人姓名
+        data['sender_name'] = request.user.name
+        # UUID转为字符串
+        for key, value in data.items():
+            data[key] = str(value)
+        # 发送消息
+        async_to_sync(channel_layer.group_send)(
+            chat_group_name,
+            {
+                'type': 'chat.message',
+                'data': data
+            }
+        )
+    return Response(None, status=status.HTTP_200_OK)
+
