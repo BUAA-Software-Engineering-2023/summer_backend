@@ -1,12 +1,11 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
-from document.views import DocumentViewSet, authorize_share_view, read_document_view, get_histories_view, \
-    restore_history_view, migrate_documents_view, save_document_view, authorization_check_view, \
-    synchronize_document_view
+from document.views import *
 
 router = DefaultRouter(trailing_slash=False)
 router.register('documents', DocumentViewSet)
+router.register('document-folders', DocumentFolderViewSet)
 
 urlpatterns = [
     path('documents/authorize', authorize_share_view),
