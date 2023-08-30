@@ -11,5 +11,7 @@ urlpatterns = [
     path('chat/<str:pk>/read', read_chat_message_view),
     path('chat/<str:pk>/leave', leave_group_view),
     path('chat/<str:pk>/admin-leave', admin_leave_group_view),
-    path('chat/<str:pk>/delete', delete_group_view)
+    path('chat/<str:pk>/delete', delete_group_view),
+    path('chat/<str:pk>/forward', forward_chat_message_view),
+    path('chat/<str:pk>/forward-together', forward_chat_message_together_view),
 ]
