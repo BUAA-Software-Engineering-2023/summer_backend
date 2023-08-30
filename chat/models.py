@@ -13,6 +13,7 @@ class Chat(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
     members = models.ManyToManyField(User)
+    admin = models.ForeignKey(User, on_delete=models.CASCADE, null=True, related_name='admin_chat')
     team = models.ForeignKey(Team, on_delete=models.CASCADE)
     type = models.CharField(max_length=10, choices=type_choice)
     priority = models.IntegerField(default=0)

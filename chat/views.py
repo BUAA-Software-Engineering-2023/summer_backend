@@ -6,6 +6,8 @@ from permissions import *
 from .serializers import *
 from .models import *
 from django.db.models import Max, F, Subquery
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 
 class ChatListView(generics.ListCreateAPIView):
@@ -24,14 +26,16 @@ class ChatListView(generics.ListCreateAPIView):
                 .annotate(last_message_time=Max('chatmessage__created_time'))
                 .order_by('-priority', F('last_message_time').desc(nulls_last=True)))
     def perform_create(self, serializer):
+        chat_type = self.request.data.get('type') or 'group'
         name = self.request.data.get('name')
+        admin = self.request.user if chat_type == 'group' else None
         if not name:
             # 未传递群组名称则将成员名拼接作为群组名称
             members = User.objects.filter(id__in=self.request.data.get('members')).distinct().values('name')
             members = [member['name'] for member in members]
             name = ','.join(members)
 
-        serializer.save(type='group', name=name)
+        serializer.save(type=chat_type, name=name, admin=admin)
 
     def list(self, request, *args, **kwargs):
         ret = super().list(request, *args, **kwargs)
@@ -48,7 +52,7 @@ class ChatListView(generics.ListCreateAPIView):
                     'name': '所有人',
                     'username': 'all'
                 })
-                return ret
+            return ret
         except TeamMember.DoesNotExist:
             return ret
 
@@ -57,7 +61,7 @@ class ChatRetrieveView(generics.RetrieveAPIView):
     """
     获取单个群组信息
     """
-    permission_classes = [IsMemberForChat]
+    permission_classes = [IsMemberOfChat]
     serializer_class = ChatSerializer
 
     def get_queryset(self):
@@ -68,7 +72,24 @@ class ChatRetrieveView(generics.RetrieveAPIView):
                 .order_by('-priority', F('last_message_time').desc(nulls_last=True)))
 
 @api_view(['PATCH'])
-@permission_classes([IsMemberForChat])
+@permission_classes([IsAdminOfChat])
+def rename_chat_view(request, pk):
+    """
+    重命名群组
+    :param request:
+    :param pk: 群组id
+    :return:
+    """
+    try:
+        chat = Chat.objects.get(pk=pk)
+    except Chat.DoesNotExist:
+        return Response({'detail': '不存在的群组'}, status=status.HTTP_400_BAD_REQUEST)
+    chat.name = request.data.get('name') or chat.name
+    chat.save()
+    return Response(None, status=status.HTTP_200_OK)
+
+@api_view(['PATCH'])
+@permission_classes([IsAdminOfChat])
 def add_chat_member_view(request, pk):
     """
     添加群组成员
@@ -89,7 +110,7 @@ def add_chat_member_view(request, pk):
     return Response(None, status=status.HTTP_200_OK)
 
 @api_view(['PATCH'])
-@permission_classes([IsMemberForChat])
+@permission_classes([IsAdminOfChat])
 def remove_chat_member_view(request, pk):
     """
     移除群组成员
@@ -112,7 +133,7 @@ def remove_chat_member_view(request, pk):
     return Response(None, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
-@permission_classes([IsMemberForChat])
+@permission_classes([IsMemberOfChat])
 def get_chat_message_view(request, pk):
     """
     获取群聊的历史消息
@@ -145,7 +166,7 @@ def get_chat_message_view(request, pk):
 
 
 @api_view(['PATCH'])
-@permission_classes([IsMemberForChat])
+@permission_classes([IsMemberOfChat])
 def read_chat_message_view(request, pk):
     """
     将群聊消息均标为已读
@@ -155,3 +176,188 @@ def read_chat_message_view(request, pk):
     """
     ChatMessage.objects.filter(chat=pk).update(unread=False)
     return Response(None, status=status.HTTP_200_OK)
+
+@api_view(['PATCH'])
+@permission_classes([IsMemberOfChat])
+def leave_group_view(request, pk):
+    """
+    普通成员退出群组，若为管理员调用，则随机选择用户作为管理员
+    :param request: 请求
+    :param pk: 群聊id
+    :return:
+    """
+    try:
+        chat = Chat.objects.get(pk=pk)
+    except Chat.DoesNotExist:
+        return Response({'detail':'不存在的群组'}, status=status.HTTP_404_NOT_FOUND)
+    if chat.priority == 999:
+        # 默认群聊，则拒绝变更
+        return Response({'detail': '默认群聊无法退出'}, status=status.HTTP_400_BAD_REQUEST)
+    if chat.type == 'single':
+        return Response({'detail': '私聊无法退出'}, status=status.HTTP_400_BAD_REQUEST)
+    chat.members.remove(request.user)
+    if chat.admin.pk == request.user.pk:
+        # 选择一位用户作为管理员
+        chat.admin = chat.members.first()
+    if not chat.members.count():
+        # 群组不存在成员时，删除群组
+        chat.delete()
+    return Response(None, status=status.HTTP_200_OK)
+
+@api_view(['PATCH'])
+@permission_classes([IsAdminOfChat])
+def admin_leave_group_view(request, pk):
+    """
+    管理员退出群聊
+    :param request: 请求
+    :param pk: 群聊id
+    :return:
+    """
+    admin = request.data.get('admin')
+    try:
+        chat = Chat.objects.get(pk=pk)
+    except Chat.DoesNotExist:
+        return Response({'detail':'不存在的群组'}, status=status.HTTP_404_NOT_FOUND)
+    if chat.priority == 999:
+        # 默认群聊，则拒绝变更
+        return Response({'detail': '默认群聊无法退出'}, status=status.HTTP_400_BAD_REQUEST)
+    chat.members.remove(request.user)
+    if admin:
+        # 指定用户为管理员
+        chat.admin = admin
+    else:
+        # 选择一位用户作为管理员
+        chat.admin = chat.members.first()
+    if not chat.members.count():
+        # 群组不存在成员时，删除群组
+        chat.delete()
+    return Response(None, status=status.HTTP_200_OK)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAdminOfChat])
+def delete_group_view(request, pk):
+    """
+    管理员删除群聊
+    :param request: 请求
+    :param pk: 群聊id
+    :return:
+    """
+    admin = request.data.get('admin')
+    try:
+        chat = Chat.objects.get(pk=pk)
+    except Chat.DoesNotExist:
+        return Response({'detail': '不存在的群组'}, status=status.HTTP_404_NOT_FOUND)
+    if chat.priority == 999:
+        # 默认群聊，则拒绝变更
+        return Response({'detail': '默认群聊无法退出'}, status=status.HTTP_400_BAD_REQUEST)
+    chat.delete()
+    return Response(None, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+@permission_classes([IsMemberOfChat])
+def forward_chat_message_view(request, pk):
+    channel_layer = get_channel_layer()
+    messages = request.data.get('messages')
+    to = request.data.get('to')
+    if not messages or not to:
+        return Response({'detail': '参数错误'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        to_chat = Chat.objects.get(pk=to)
+    except Chat.DoesNotExist:
+        return Response({'detail': '不存在的群组'}, status=status.HTTP_404_NOT_FOUND)
+    for message in messages:
+        try:
+            # 转发的消息存入数据库
+            chat_message = ChatMessage.objects.get(pk=message)
+            if chat_message.type == 'text':
+                content = (f'<div style="font-size:10px;opacity:0.5;min-width:250px">'
+                           f'<div>转发的消息</div>'
+                           f'<div style="display: flex;justify-content: space-between;">'
+                           f'<div>{chat_message.sender.name}</div>'
+                           f'<div>{chat_message.created_time.strftime("%Y-%m-%d %H:%M:%S")}</div></div></div>'
+                           f'<div style="padding-left: 1em">{chat_message.content}</div>')
+            else:
+                return Response({'detail': '暂不支持非文本消息的转发'}, status=status.HTTP_404_NOT_FOUND)
+            chat_message = ChatMessage.objects.create(
+                chat=to_chat, content=content,
+                sender=request.user, type='text'
+            )
+            # 向群聊用户发送消息
+            for member in to_chat.members.all():
+                # 获取用户所在频道名
+                chat_group_name = f'chat_{member.id}'
+                # 序列化数据
+                data = ChatMessageSerializer(instance=chat_message).data
+                # 额外添加发送人姓名
+                data['sender_name'] = request.user.name
+                # UUID转为字符串
+                for key, value in data.items():
+                    data[key] = str(value)
+                # 发送消息
+                async_to_sync(channel_layer.group_send)(
+                    chat_group_name,
+                    {
+                        'type': 'chat.message',
+                        'data': data
+                    }
+                )
+        except ChatMessage.DoesNotExist:
+            return Response({'detail': '不存在的消息'}, status=status.HTTP_404_NOT_FOUND)
+    return Response(None, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsMemberOfChat])
+def forward_chat_message_together_view(request, pk):
+    channel_layer = get_channel_layer()
+    messages = request.data.get('messages')
+    to = request.data.get('to')
+    if not messages or not to:
+        return Response({'detail': '参数错误'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        to_chat = Chat.objects.get(pk=to)
+    except Chat.DoesNotExist:
+        return Response({'detail': '不存在的群组'}, status=status.HTTP_404_NOT_FOUND)
+    content = ''
+    for message in messages:
+        try:
+            # 转发的消息存入数据库
+            chat_message = ChatMessage.objects.get(pk=message)
+            if chat_message.type == 'text':
+                content += (f'<div style="font-size:10px;opacity:0.5;min-width:250px">'
+                           f'<div>转发的消息</div>'
+                           f'<div style="display: flex;justify-content: space-between;">'
+                           f'<div>{chat_message.sender.name}</div>'
+                           f'<div>{chat_message.created_time.strftime("%Y-%m-%d %H:%M:%S")}</div></div></div>'
+                           f'<div style="padding-left: 1em">{chat_message.content}</div>')
+            else:
+                return Response({'detail': '暂不支持非文本消息的转发'}, status=status.HTTP_404_NOT_FOUND)
+        except ChatMessage.DoesNotExist:
+            return Response({'detail': '不存在的消息'}, status=status.HTTP_404_NOT_FOUND)
+
+    chat_message = ChatMessage.objects.create(
+        chat=to_chat, content=content,
+        sender=request.user, type='text'
+    )
+    # 向群聊用户发送消息
+    for member in to_chat.members.all():
+        # 获取用户所在频道名
+        chat_group_name = f'chat_{member.id}'
+        # 序列化数据
+        data = ChatMessageSerializer(instance=chat_message).data
+        # 额外添加发送人姓名
+        data['sender_name'] = request.user.name
+        # UUID转为字符串
+        for key, value in data.items():
+            data[key] = str(value)
+        # 发送消息
+        async_to_sync(channel_layer.group_send)(
+            chat_group_name,
+            {
+                'type': 'chat.message',
+                'data': data
+            }
+        )
+    return Response(None, status=status.HTTP_200_OK)
+
