@@ -153,8 +153,10 @@ def get_chat_message_view(request, pk):
         sub = (ChatMessage.objects.filter(chat=pk)
             .filter(content__contains=search)
             .aggregate(max_created_time=Max('created_time')))
-
-        queryset = (ChatMessage.objects.filter(chat=pk)
+        if not sub['max_created_time']:
+            queryset = []
+        else:
+            queryset = (ChatMessage.objects.filter(chat=pk)
                     .filter(content__contains=search)
                     .filter(created_time__lte=sub['max_created_time']))
 
