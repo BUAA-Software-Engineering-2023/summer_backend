@@ -13,10 +13,10 @@ RUN pip install -r requirements.txt
 RUN chmod 777 /project/summer/media
 
 
-ENV DATABASE_USER=root
-ENV DATABASE_PASSWORD=123456
-ENV DATABASE_HOST=localhost
-ENV DATABASE_PORT=3306
+ENV DB_USERNAME=root
+ENV DB_PASSWORD=123456
+ENV DB_HOST=localhost
+ENV DB_PORT=3306
 ENV DJANGO_DEBUG=False
 
 # 暴露接口
@@ -24,4 +24,4 @@ EXPOSE 8000
 EXPOSE 8001
 
 # 运行数据库迁移并启动项目
-CMD python manage.py makemigrations && python manage.py migrate && daphne -b 0.0.0.0 -p 8001 summer_backend.asgi:application && uwsgi --ini uwsgi.ini
+CMD python manage.py makemigrations && python manage.py migrate && uwsgi --ini uwsgi.ini && daphne -b 0.0.0.0 -p 8001 summer_backend.asgi:application
