@@ -99,7 +99,6 @@ def get_preview_view(request):
     data = DesignPreviewSerializer(instance=design_previews, many=True).data
     path = request.path
     path = re.sub(r'/api/v\d+.*', '/', path)
-    print(path)
     for item in data:
         item['image'] = request.build_absolute_uri(path+item['image'])
     return Response(data, status=status.HTTP_200_OK)
