@@ -25,3 +25,11 @@ class DesignHistory(models.Model):
 
     class Meta:
         ordering = ['-created_time']
+
+
+class DesignPreview(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    image = models.TextField()
+    created_time = models.DateTimeField(auto_now_add=True)
+    update_time = models.DateTimeField(auto_now=True)
+    design = models.ForeignKey(Design, on_delete=models.CASCADE)
