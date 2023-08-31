@@ -4,9 +4,13 @@ from user.serializers import UserSerializer
 
 
 class ChatMessageSerializer(serializers.ModelSerializer):
+    sender_name = serializers.SerializerMethodField()
     class Meta:
         model = ChatMessage
         fields = '__all__'
+
+    def get_sender_name(self, chat_message):
+        return chat_message.sender.name
 
 class ChatSerializer(serializers.ModelSerializer):
     members = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), many=True)
