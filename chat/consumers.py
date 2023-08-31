@@ -123,6 +123,7 @@ class ChatConsumer(JsonWebsocketConsumer):
             )
 
         data = ChatMessageSerializer(instance=chat_message).data
+        data['sender_name'] = self.user.name
         for key, value in data.items():
             data[key] = str(value)
         # 发送消息至用户

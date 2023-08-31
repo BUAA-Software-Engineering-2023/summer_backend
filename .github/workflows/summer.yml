@@ -14,7 +14,7 @@ jobs:
     if: github.repository == 'BUAA-Software-Engineering-2023/summer_backend'
     # 步骤
     steps:
-      - uses: actions/checkout@v2 # git pull
+      - uses: actions/checkout@v2
       - name: 打包镜像, 上传 Docker Hub
         run: |
           docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
@@ -22,7 +22,7 @@ jobs:
           docker tag summer ${{ secrets.DOCKER_REPOSITORY }}
           docker push ${{ secrets.DOCKER_REPOSITORY }}
 
-      - name: 登录服务器, 执行脚本
+      - name: 登录服务器, 拉取Docker镜像
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -30,13 +30,16 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
+            sudo mkdir -p ~/django/media
+            sudo chmod 777 ~/django/media
             sudo docker rm summer_backend -f
             sudo docker rmi ${{ secrets.DOCKER_REPOSITORY }}
             sudo docker pull ${{ secrets.DOCKER_REPOSITORY }}
-            sudo docker run -d -it -p 8800:8000 \
+            sudo docker run -d -it -p 8800:8000 -p 8801:8001 \
             -e DB_USERNAME=${{ secrets.DB_USERNAME }} \
             -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
             -e DB_HOST=${{ secrets.DB_HOST }} \
             -e DB_PORT=${{ secrets.DB_PORT }} \
+            -v ~/django/media:/project/summer/media \
             --name summer_backend --restart=unless-stopped \
             ${{ secrets.DOCKER_REPOSITORY }}

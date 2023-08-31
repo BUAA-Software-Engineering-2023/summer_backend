@@ -27,3 +27,10 @@ class DesignHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = DesignHistory
         fields = '__all__'
+
+
+class DesignPreviewSerializer(serializers.ModelSerializer):
+    design = serializers.PrimaryKeyRelatedField(queryset=Design.objects.all())
+    class Meta:
+        model = DesignPreview
+        fields = '__all__'

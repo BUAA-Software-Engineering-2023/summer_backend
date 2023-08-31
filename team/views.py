@@ -2,6 +2,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import generics
+
+from chat.models import Chat
 from permissions import *
 from .serializers import *
 from .models import *
@@ -14,7 +16,7 @@ class TeamListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        return Team.objects.filter(members__id=user.id)
+        return Team.objects.filter(members__id=user.id).distinct()
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -74,6 +76,11 @@ class TeamInviteListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         team = self.request.data.get('team')
         invitee = self.request.data.get('invitee')
+        try:
+            TeamMember.objects.get(team=team, member=invitee)
+            raise serializers.ValidationError({'detail': '无需发送邀请'})
+        except TeamMember.DoesNotExist:
+            pass
         invite = TeamInvite.objects.filter(Q(team=team) & Q(invitee=invitee),
                                            Q(status='send') & ~Q(team__members=invitee))
         if invite:
