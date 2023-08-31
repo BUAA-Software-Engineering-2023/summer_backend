@@ -23,15 +23,26 @@ class DocumentViewSet(viewsets.ModelViewSet):
         return Document.objects.filter(project=project, is_deleted=False)
 
     def perform_create(self, serializer):
-        serializer.save(
-            title=self.request.data.get('title'),
-            project=Project.objects.get(pk=self.request.data.get('project')),
-            folder=DocumentFolder.objects.get(pk=self.request.data.get('folder'))
-        )
-        DocumentHistory.objects.create(
-            document=serializer.instance,
-            content=''
-        )
+        folder = self.request.data.get('folder')
+        if folder:
+            serializer.save(
+                title=self.request.data.get('title'),
+                project=Project.objects.get(pk=self.request.data.get('project')),
+                folder=DocumentFolder.objects.get(pk=self.request.data.get('folder'))
+            )
+            DocumentHistory.objects.create(
+                document=serializer.instance,
+                content=''
+            )
+        else:
+            serializer.save(
+                title=self.request.data.get('title'),
+                project=Project.objects.get(pk=self.request.data.get('project'))
+            )
+            DocumentHistory.objects.create(
+                document=serializer.instance,
+                content=''
+            )
 
     def perform_destroy(self, instance):
         instance.is_deleted = True
@@ -168,3 +179,15 @@ class DocumentFolderViewSet(viewsets.ModelViewSet):
         documents = instance.document_set.all()
         for document in documents:
             document.documenthistory_set.update(is_deleted=True)
+
+
+@api_view(['GET'])
+@permission_classes([IsMemberForDocument])
+def get_document_tree_view(request):
+    project = Project.objects.get(pk=(request.query_params.get('project') or request.data.get('project')))
+    document_folders = DocumentFolder.objects.filter(project=project, is_deleted=False)
+    folder_data = DocumentFolderTreeSerializer(instance=document_folders, many=True).data
+    documents = Document.objects.filter(project=project, is_deleted=False, folder=None)
+    document_data = DocumentSerializer(instance=documents, many=True).data
+    data = folder_data + document_data
+    return Response(data=data, status=status.HTTP_200_OK)
