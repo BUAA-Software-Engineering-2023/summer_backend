@@ -127,17 +127,25 @@ class IsMemberForDocument(BasePermission):
         if not request.user:
             return False
         project = request.data.get('project') or request.query_params.get('project')
+        document = request.data.get('document') or request.query_params.get('document')
         if project:
             try:
                 TeamMember.objects.get(team__project=project, member=request.user)
                 return True
             except Exception:
                 return False
-        else:
+        elif document:
             kwargs = view.kwargs
             pk = kwargs.get('pk') or request.data.get('document') or request.query_params.get('document')
             try:
                 TeamMember.objects.get(team__project__document=pk, member=request.user)
+                return True
+            except Exception:
+                return False
+        else:
+            pk = request.data.get('document_history') or request.query_params.get('document_history')
+            try:
+                TeamMember.objects.get(team__project__document__documenthistory=pk, member=request.user)
                 return True
             except Exception:
                 return False
