@@ -103,7 +103,7 @@ def migrate_documents_view(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsSecretKeyAuthorized or IsMemberOrVisitorReadOnlyForDocument])
+@permission_classes([IsSecretKeyAuthorized | IsMemberOrVisitorReadOnlyForDocument])
 def save_document_view(request):
     try:
         document = Document.objects.get(pk=request.data.get('document'))
