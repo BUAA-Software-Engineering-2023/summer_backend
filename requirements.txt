@@ -6,3 +6,4 @@ channels
 daphne
 mysqlclient
 pyjwt
+uwsgi
