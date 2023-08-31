@@ -96,11 +96,18 @@ def get_preview_view(request):
     """
     project = request.query_params.get('project')
     design_previews = DesignPreview.objects.filter(design__project=project)
-    data = DesignPreviewSerializer(instance=design_previews, many=True).data
-    if not data:
+    if not design_previews:
         return Response({'detail': '未提供预览'}, status=status.HTTP_404_NOT_FOUND)
+    data = DesignPreviewSerializer(instance=design_previews, many=True).data
     path = request.path
     path = re.sub(r'/api/v\d+.*', '/', path)
     for item in data:
         item['image'] = request.build_absolute_uri(path+item['image'])
+    return Response(data, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_template_view(request):
+    design_history = DesignHistory.objects.filter(design__is_template=True)
+    data = DesignHistorySerializer(instance=design_history, many=True).data
     return Response(data, status=status.HTTP_200_OK)

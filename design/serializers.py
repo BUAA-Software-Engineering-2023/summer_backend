@@ -4,7 +4,7 @@ from .models import *
 class DesignSerializer(serializers.ModelSerializer):
     class Meta:
         model = Design
-        exclude = ['is_deleted']
+        exclude = ['is_deleted', 'is_template']
 
 
 class DesignWithDataSerializer(serializers.ModelSerializer):
@@ -12,7 +12,7 @@ class DesignWithDataSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Design
-        exclude = ['is_deleted']
+        exclude = ['is_deleted', 'is_template']
 
     def get_data(self, design):
         latest_data = design.designhistory_set.first()
