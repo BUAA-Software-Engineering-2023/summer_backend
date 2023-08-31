@@ -69,6 +69,23 @@ def generate_preview_view(request, pk):
     return Response(DesignPreviewSerializer(instance=design_preview).data,
                     status=status.HTTP_201_CREATED)
 
+@api_view(['PATCH'])
+@permission_classes([IsMemberForDesign])
+def enable_preview_view(request):
+    """
+    开启原型设计预览
+    :param request:
+    :return:
+    """
+    project = request.query_params.get('project')
+    try:
+        project = Project.objects.get(pk=project)
+    except Project.DoesNotExist:
+        return Response({'detail': '不存在的项目'}, status=status.HTTP_404_NOT_FOUND)
+    project.preview_designs = True
+    project.save()
+    return Response(None, status=status.HTTP_204_NO_CONTENT)
+
 @api_view(['DELETE'])
 @permission_classes([IsMemberForDesign])
 def cancel_preview_view(request):
@@ -78,12 +95,12 @@ def cancel_preview_view(request):
     :return:
     """
     project = request.query_params.get('project')
-    design_previews = DesignPreview.objects.filter(design__project=project)
-    for design_preview in design_previews:
-        if os.path.exists(design_preview.image):
-            os.remove(design_preview.image)
-        design_preview.delete()
-
+    try:
+        project = Project.objects.get(pk=project)
+    except Project.DoesNotExist:
+        return Response({'detail': '不存在的项目'}, status=status.HTTP_404_NOT_FOUND)
+    project.preview_designs = False
+    project.save()
     return Response(None, status=status.HTTP_204_NO_CONTENT)
 
 @api_view(['GET'])
@@ -95,7 +112,7 @@ def get_preview_view(request):
     :return:
     """
     project = request.query_params.get('project')
-    design_previews = DesignPreview.objects.filter(design__project=project)
+    design_previews = DesignPreview.objects.filter(design__project=project, design__project__preview_designs=True)
     if not design_previews:
         return Response({'detail': '未提供预览'}, status=status.HTTP_404_NOT_FOUND)
     data = DesignPreviewSerializer(instance=design_previews, many=True).data
