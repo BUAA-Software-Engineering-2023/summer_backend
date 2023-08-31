@@ -97,6 +97,8 @@ def get_preview_view(request):
     project = request.query_params.get('project')
     design_previews = DesignPreview.objects.filter(design__project=project)
     data = DesignPreviewSerializer(instance=design_previews, many=True).data
+    if not data:
+        return Response({'detail': '未提供预览'}, status=status.HTTP_404_NOT_FOUND)
     path = request.path
     path = re.sub(r'/api/v\d+.*', '/', path)
     for item in data:
