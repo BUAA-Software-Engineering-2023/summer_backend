@@ -164,7 +164,7 @@ class DocumentFolderViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         project = Project.objects.get(pk=(self.request.query_params.get('project') or self.request.data.get('project')))
-        return DocumentFolder.objects.filter(project=project)
+        return DocumentFolder.objects.filter(project=project, is_deleted=False)
 
     def perform_create(self, serializer):
         serializer.save(
