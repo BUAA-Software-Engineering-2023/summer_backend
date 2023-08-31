@@ -166,6 +166,13 @@ def get_chat_message_view(request, pk):
     else:
         queryset = ChatMessage.objects.filter(chat=pk)[:count]
     serializer = ChatMessageSerializer(instance=queryset, many=True)
+
+    # 文件和图片转换地址
+    path = request.path
+    path = re.sub(r'/api/v\d+.*', '/', path)
+    for item in serializer.data:
+        if item['type'] != 'text':
+            item['content'] = request.build_absolute_uri(path + item['content'])
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -261,6 +268,12 @@ def delete_group_view(request, pk):
 @api_view(['POST'])
 @permission_classes([IsMemberOfChat])
 def forward_chat_message_view(request, pk):
+    """
+    逐条转发消息
+    :param request: 请求
+    :param pk: 聊天室id
+    :return:
+    """
     channel_layer = get_channel_layer()
     messages = request.data.get('messages')
     to = request.data.get('to')
@@ -314,6 +327,12 @@ def forward_chat_message_view(request, pk):
 @api_view(['POST'])
 @permission_classes([IsMemberOfChat])
 def forward_chat_message_together_view(request, pk):
+    """
+    合并转发消息
+    :param request: 请求
+    :param pk: 聊天室ID
+    :return:
+    """
     channel_layer = get_channel_layer()
     messages = request.data.get('messages')
     to = request.data.get('to')
