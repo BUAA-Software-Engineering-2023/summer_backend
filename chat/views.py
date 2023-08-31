@@ -1,3 +1,7 @@
+import hashlib
+import os
+import re
+
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
@@ -361,3 +365,67 @@ def forward_chat_message_together_view(request, pk):
         )
     return Response(None, status=status.HTTP_200_OK)
 
+
+@api_view(['POST'])
+@permission_classes([IsMemberOfChat])
+def chat_upload_file_view(request, pk):
+    """
+    聊天上传文件
+    :param request: 请求
+    :param pk: 聊天室id
+    :return:
+    """
+    file_type = request.query_params.get('type')
+    file_extension = request.query_params.get('extension')
+    file = request.FILES.get('file')
+
+    try:
+        chat = Chat.objects.get(pk=pk)
+    except Chat.DoesNotExist:
+        return Response({'detail': '不存在的聊天'}, status=status.HTTP_404_NOT_FOUND)
+    if not (file and file_type and file_extension):
+        return Response({'detail': '参数错误'}, status=status.HTTP_400_BAD_REQUEST)
+
+    file_type = 'image' if file_type.startswith('image') else 'file'
+    file = file.open('r')
+    md5 = hashlib.md5(file.read()).hexdigest()
+    file_name = md5 + '.' + file_extension
+
+    os.makedirs('./media/chat/', exist_ok=True)
+    if not os.path.exists(f'./media/chat/{file_name}'):
+        # 存储图片
+        file.seek(0)
+        with open(f'./media/chat/{file_name}', 'wb') as f:
+            f.write(file.read())
+    # 消息存入数据库
+    chat_message = ChatMessage.objects.create(
+        sender=request.user,
+        type=file_type,
+        content=f'media/chat/{file_name}',
+        chat=chat
+    )
+    # websocket通知用户
+    channel_layer = get_channel_layer()
+    # 序列化数据
+    data = ChatMessageSerializer(instance=chat_message).data
+    # 额外添加发送人姓名
+    data['sender_name'] = request.user.name
+    path = request.path
+    path = re.sub(r'/api/v\d+.*', '/', path)
+    data['content'] = request.build_absolute_uri(path+data['content'])
+    # UUID转为字符串
+    for key, value in data.items():
+        data[key] = str(value)
+    # 向群聊用户发送消息
+    for member in chat.members.all():
+        # 获取用户所在频道名
+        chat_group_name = f'chat_{member.id}'
+        # 发送消息
+        async_to_sync(channel_layer.group_send)(
+            chat_group_name,
+            {
+                'type': 'chat.message',
+                'data': data
+            }
+        )
+    return Response(None, status=status.HTTP_201_CREATED)
