@@ -220,3 +220,13 @@ def document_mention_view(request):
         document=document
     )
     return Response(data={'detail': '已@用户'}, status=status.HTTP_200_OK)
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAdminForDocument])
+def deauthorize_share_view(request):
+    document = Document.objects.get(pk=request.data.get('document'))
+    document.is_shared = False
+    document.is_editable = False
+    document.save()
+    return Response(status=status.HTTP_200_OK)
