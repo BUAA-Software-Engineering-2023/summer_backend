@@ -148,6 +148,7 @@ def get_chat_message_view(request, pk):
     id = request.query_params.get('id')
     count = int(request.query_params.get('count', 100))
     search = request.query_params.get('search')
+    all = request.query_params.get('all')
 
     if search:
         matches = (ChatMessage.objects.filter(chat=pk)
@@ -159,10 +160,16 @@ def get_chat_message_view(request, pk):
                     .filter(created_time__lte=matches[0].created_time))
 
     elif id:
-        queryset = (ChatMessage.objects.filter(chat=pk)
-        .filter(created_time__lt=Subquery(
-            ChatMessage.objects.filter(pk=id).values('created_time')
-        )))[:count]
+        if all:
+            queryset = (ChatMessage.objects.filter(chat=pk)
+            .filter(created_time__lt=Subquery(
+                ChatMessage.objects.filter(pk=id).values('created_time')
+            )))
+        else:
+            queryset = (ChatMessage.objects.filter(chat=pk)
+            .filter(created_time__lt=Subquery(
+                ChatMessage.objects.filter(pk=id).values('created_time')
+            )))[:count]
     else:
         queryset = ChatMessage.objects.filter(chat=pk)[:count]
     serializer = ChatMessageSerializer(instance=queryset, many=True)
