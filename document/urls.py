@@ -9,6 +9,7 @@ router.register('document-folders', DocumentFolderViewSet)
 
 urlpatterns = [
     path('documents/authorize', authorize_share_view),
+    path('documents/deauthorize', deauthorize_share_view),
     path('documents/read', read_document_view),
     path('documents/history', get_histories_view),
     path('documents/restore', restore_history_view),
