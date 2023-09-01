@@ -99,7 +99,7 @@ def restore_history_view(request):
 @api_view(['GET'])
 @permission_classes([IsSecretKeyAuthorized])
 def migrate_documents_view(request):
-    data = DocumentWithDataSerializer(instance=Document.objects.all(), many=True).data
+    data = DocumentWithDataSerializer(instance=Document.objects.filter(is_deleted=False), many=True).data
     return Response(data=data, status=status.HTTP_200_OK)
 
 
