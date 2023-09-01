@@ -17,5 +17,7 @@ urlpatterns = [
     path('documents/synchronize/<str:pk>', synchronize_document_view),
     path('documents/check', authorization_check_view),
     path('docments/tree', get_document_tree_view),
+    path('documents/template', get_document_template_view),
+    path('documents/mention', document_mention_view),
     path('', include(router.urls))
 ]
