@@ -19,4 +19,6 @@ class MessageSerializer(serializers.ModelSerializer):
     def get_team(self, message):
         if message.chat_message:
             return message.chat_message.chat.team.id
+        if message.document:
+            return message.document.project.team.id
         return None
