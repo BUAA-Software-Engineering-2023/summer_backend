@@ -23,7 +23,7 @@ class TeamWithMemberSerializer(serializers.ModelSerializer):
         return members.data
 
 class TeamInviteSerializer(serializers.ModelSerializer):
-    team = TeamSerializer()
+    team = serializers.PrimaryKeyRelatedField(queryset=Team.objects.all())
     invitee = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
     status = serializers.SerializerMethodField()
     class Meta:
@@ -33,3 +33,8 @@ class TeamInviteSerializer(serializers.ModelSerializer):
 
     def get_status(self, team_invite):
         return team_invite.get_status_display()
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        ret['team'] = TeamSerializer(instance.team).data
+        return ret
