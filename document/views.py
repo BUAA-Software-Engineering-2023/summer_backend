@@ -3,8 +3,9 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
+from message.models import Message
 from permissions import IsMemberForDocument, IsMemberOrVisitorReadOnlyForDocument, \
-    IsSecretKeyAuthorized, IsAdminForDocument
+    IsSecretKeyAuthorized, IsAdminForDocument, IsAuthenticated
 from project.models import Project
 from summer_backend import settings
 from user.models import User
@@ -191,3 +192,31 @@ def get_document_tree_view(request):
     document_data = DocumentSerializer(instance=documents, many=True).data
     data = folder_data + document_data
     return Response(data=data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_document_template_view(request):
+    documents = Document.objects.filter(project__isnull=True, is_deleted=False)
+    data = DocumentSerializer(instance=documents, many=True).data
+    return Response(data=data, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsMemberForDocument])
+def document_mention_view(request):
+    receiver = request.data.get('receiver')
+    document = request.data.get('document')
+    try:
+        receiver = User.objects.get(pk=receiver)
+    except User.DoesNotExist:
+        return Response(data={'detail': '无对应用户'}, status=status.HTTP_404_NOT_FOUND)
+    sender_name = request.user.name
+    document = Document.objects.get(pk=document)
+    document_name = document.title
+    Message.objects.create(
+        receiver=receiver,
+        content=f'{sender_name}在文件{document_name}中@了你‘',
+        document=document
+    )
+    return Response(data={'detail': '已@用户'}, status=status.HTTP_200_OK)
