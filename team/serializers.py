@@ -33,3 +33,8 @@ class TeamInviteSerializer(serializers.ModelSerializer):
 
     def get_status(self, team_invite):
         return team_invite.get_status_display()
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        ret['team'] = TeamSerializer(instance.team).data
+        return ret
