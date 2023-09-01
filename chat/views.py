@@ -150,13 +150,13 @@ def get_chat_message_view(request, pk):
     search = request.query_params.get('search')
 
     if search:
-        sub = (ChatMessage.objects.filter(chat=pk)
-            .filter(content__contains=search)
-            .aggregate(max_created_time=Max('created_time')))
-
-        queryset = (ChatMessage.objects.filter(chat=pk)
-                    .filter(content__contains=search)
-                    .filter(created_time__lte=sub['max_created_time']))
+        matches = (ChatMessage.objects.filter(chat=pk)
+            .filter(content__contains=search, type='text'))
+        if not matches:
+            queryset = []
+        else:
+            queryset = (ChatMessage.objects.filter(chat=pk)
+                    .filter(created_time__lte=matches[0].created_time))
 
     elif id:
         queryset = (ChatMessage.objects.filter(chat=pk)
@@ -166,6 +166,8 @@ def get_chat_message_view(request, pk):
     else:
         queryset = ChatMessage.objects.filter(chat=pk)[:count]
     serializer = ChatMessageSerializer(instance=queryset, many=True)
+    if search:
+        serializer_matches = ChatMessageSerializer(instance=matches, many=True)
 
     # 文件和图片转换地址
     path = request.path
@@ -173,6 +175,15 @@ def get_chat_message_view(request, pk):
     for item in serializer.data:
         if item['type'] != 'text':
             item['content'] = request.build_absolute_uri(path + item['content'])
+    if search:
+        for item in serializer_matches.data:
+            if item['type'] != 'text':
+                item['content'] = request.build_absolute_uri(path + item['content'])
+    if search:
+        return Response({
+            'all': serializer.data,
+            'matches': serializer_matches.data
+        }, status=status.HTTP_200_OK)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
