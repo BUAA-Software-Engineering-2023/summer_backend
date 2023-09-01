@@ -117,7 +117,7 @@ class ChatConsumer(JsonWebsocketConsumer):
                     })
 
             Message.objects.create(
-                content=f'群聊{chat.name}中有消息提到您：\n{content["content"]}',
+                content=f'群聊{chat.name}中有消息提到您',
                 receiver=match,
                 chat_message=chat_message
             )
