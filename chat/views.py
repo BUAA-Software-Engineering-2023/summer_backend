@@ -162,7 +162,7 @@ def get_chat_message_view(request, pk):
     elif id:
         if all:
             queryset = (ChatMessage.objects.filter(chat=pk)
-            .filter(created_time__lt=Subquery(
+            .filter(created_time__gte=Subquery(
                 ChatMessage.objects.filter(pk=id).values('created_time')
             )))
         else:
