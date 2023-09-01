@@ -1,5 +1,5 @@
 from .serializers import MessageSerializer
-from rest_framework import status, viewsets
+from rest_framework import status, viewsets, filters
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
@@ -10,6 +10,9 @@ from message.models import Message
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
+    filter_backends = [filters.OrderingFilter]
+    ordering_fields = '__all__'
+    ordering = ['-create_time']
 
     def get_queryset(self):
         user = self.request.user
