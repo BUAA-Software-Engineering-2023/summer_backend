@@ -30,8 +30,8 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            sudo mkdir -p ~/django/media
-            sudo chmod 777 ~/django/media
+            sudo mkdir -p /django/media
+            sudo chmod 777 /django/media
             sudo docker rm summer_backend -f
             sudo docker rmi ${{ secrets.DOCKER_REPOSITORY }}
             sudo docker pull ${{ secrets.DOCKER_REPOSITORY }}
@@ -40,6 +40,6 @@ jobs:
             -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
             -e DB_HOST=${{ secrets.DB_HOST }} \
             -e DB_PORT=${{ secrets.DB_PORT }} \
-            -v ~/django/media:/project/summer/media \
+            -v /django/media:/project/summer/media \
             --name summer_backend --restart=unless-stopped \
             ${{ secrets.DOCKER_REPOSITORY }}
