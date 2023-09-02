@@ -40,8 +40,7 @@ jobs:
             -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
             -e DB_HOST=${{ secrets.DB_HOST }} \
             -e DB_PORT=${{ secrets.DB_PORT }} \
-            -e REDIS_HOST=${{ secrets.REDIS_HOST }} \
-            -e REDIS_PORT=${{ secrets.REDIS_PORT }} \
+            -e REDIS_URL=${{ secrets.REDIS_URL }} \
             -v /django/media:/project/summer/media \
             --name summer_backend --restart=unless-stopped \
             ${{ secrets.DOCKER_REPOSITORY }}
