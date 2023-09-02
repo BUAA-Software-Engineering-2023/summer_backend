@@ -145,6 +145,7 @@ def use_template_view(request, pk):
     except Design.DoesNotExist:
         return Response({'detial': '错误的design id'}, status=status.HTTP_404_NOT_FOUND)
     template = request.query_params.get('template')
+    title = request.query_params.get('title')
     if not template:
         return Response({'detial': '错误的参数'}, status=status.HTTP_400_BAD_REQUEST)
     try:
@@ -156,6 +157,9 @@ def use_template_view(request, pk):
         style=template.style,
         design=design
     )
+    if title:
+        design.title = title
+        design.save()
     return Response(None, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
