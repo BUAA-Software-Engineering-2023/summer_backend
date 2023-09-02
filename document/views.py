@@ -94,11 +94,12 @@ def restore_history_view(request):
     # DocumentHistory.objects.filter(created_time__gt=document_history.created_time,
     #                                document=document_history.document).update(
     #     is_deleted=True)
-    DocumentHistory.objects.create(
+    document_history = DocumentHistory.objects.create(
         document=document_history.document,
-        content=document_history.content,
-        created_time=timezone.now() + timezone.timedelta(seconds=10)
+        content=document_history.content
     )
+    document_history.created_time=timezone.now() + timezone.timedelta(seconds=10)
+    document_history.save()
     return Response(status=status.HTTP_200_OK)
 
 
