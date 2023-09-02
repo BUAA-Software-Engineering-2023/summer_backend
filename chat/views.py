@@ -433,7 +433,7 @@ def chat_upload_file_view(request, pk):
     if not os.path.exists(f'./media/chat/{file_name}'):
         # 存储图片
         file.seek(0)
-        with open(f'./media/chat/{file_name}', 'wb') as f:
+        with open(f'./media/chat/{file_name}.{file_extension}', 'wb') as f:
             f.write(file.read())
     # 消息存入数据库
     chat_message = ChatMessage.objects.create(
