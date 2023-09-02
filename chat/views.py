@@ -414,6 +414,7 @@ def chat_upload_file_view(request, pk):
     """
     file_type = request.query_params.get('type')
     file_extension = request.query_params.get('extension')
+    name = request.query_params.get('name')
     file = request.FILES.get('file')
 
     try:
@@ -426,7 +427,7 @@ def chat_upload_file_view(request, pk):
     file_type = 'image' if file_type.startswith('image') else 'file'
     file = file.open('r')
     md5 = hashlib.md5(file.read()).hexdigest()
-    file_name = md5 + '.' + file_extension
+    file_name = f'{md5}.{file_extension}'
 
     os.makedirs('./media/chat/', exist_ok=True)
     if not os.path.exists(f'./media/chat/{file_name}'):
@@ -439,6 +440,7 @@ def chat_upload_file_view(request, pk):
         sender=request.user,
         type=file_type,
         content=f'media/chat/{file_name}',
+        name=f'{name}',
         chat=chat
     )
     # websocket通知用户
