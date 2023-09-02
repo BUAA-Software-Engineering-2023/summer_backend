@@ -32,6 +32,7 @@ class ChatMessage(models.Model):
     content = models.TextField()
     unread = models.BooleanField(default=True)
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
+    name = models.CharField(max_length=1024, null=True)
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
     created_time = models.DateTimeField(auto_now_add=True)
     update_time = models.DateTimeField(auto_now=True)

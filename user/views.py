@@ -1,5 +1,5 @@
 from django.contrib.auth.hashers import check_password
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework import status, generics, filters
@@ -13,6 +13,7 @@ from permissions import *
 
 
 @api_view(['POST'])
+@authentication_classes([])
 @permission_classes([])
 def login_password_view(request):
     email = request.data.get('email')
