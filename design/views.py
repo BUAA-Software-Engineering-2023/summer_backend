@@ -137,6 +137,26 @@ def get_template_view(request):
     data = DesignHistorySerializer(instance=design_history, many=True).data
     return Response(data, status=status.HTTP_200_OK)
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def use_template_view(request, pk):
+    try:
+        design = Design.objects.get(pk=pk)
+    except Design.DoesNotExist:
+        return Response({'detial': '错误的design id'}, status=status.HTTP_404_NOT_FOUND)
+    template = request.query_params.get('template')
+    if not template:
+        return Response({'detial': '错误的参数'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        template = DesignHistory.objects.get(id=template)
+    except DesignHistory.DoesNotExist:
+        return Response({'detial': '错误的模板id'}, status=status.HTTP_404_NOT_FOUND)
+    DesignHistory.objects.create(
+        content=template.content,
+        style=template.style,
+        design=design
+    )
+    return Response(None, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 def insert_template_view(request):
