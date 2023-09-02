@@ -1,3 +1,5 @@
+import time
+
 import jwt
 from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, permission_classes
@@ -95,7 +97,8 @@ def restore_history_view(request):
     #     is_deleted=True)
     DocumentHistory.objects.create(
         document=document_history.document,
-        content=document_history.content
+        content=document_history.content,
+        created_time=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time() + 10))
     )
     return Response(status=status.HTTP_200_OK)
 
