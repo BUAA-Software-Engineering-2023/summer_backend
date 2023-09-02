@@ -427,20 +427,20 @@ def chat_upload_file_view(request, pk):
     file_type = 'image' if file_type.startswith('image') else 'file'
     file = file.open('r')
     md5 = hashlib.md5(file.read()).hexdigest()
-    file_name = md5
+    file_name = f'{md5}.{file_extension}'
 
     os.makedirs('./media/chat/', exist_ok=True)
     if not os.path.exists(f'./media/chat/{file_name}'):
         # 存储图片
         file.seek(0)
-        with open(f'./media/chat/{file_name}.{file_extension}', 'wb') as f:
+        with open(f'./media/chat/{file_name}', 'wb') as f:
             f.write(file.read())
     # 消息存入数据库
     chat_message = ChatMessage.objects.create(
         sender=request.user,
         type=file_type,
         content=f'media/chat/{file_name}',
-        name=f'{name}.{file_extension}',
+        name=f'{name}',
         chat=chat
     )
     # websocket通知用户
