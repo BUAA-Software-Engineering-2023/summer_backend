@@ -73,7 +73,7 @@ def read_document_view(request):
         editable = document.is_editable
     else:
         editable = True
-    return Response(data={'detail': '已授权阅读', 'content': document_history.first().content, 'editable': editable},
+    return Response(data={'detail': '已授权阅读', 'content': document_history.first().content, 'editable': editable, 'title': document.title},
                     status=status.HTTP_200_OK)
 
 
