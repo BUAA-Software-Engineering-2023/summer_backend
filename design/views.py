@@ -148,7 +148,7 @@ def use_template_view(request, pk):
     if not template:
         return Response({'detial': '错误的参数'}, status=status.HTTP_400_BAD_REQUEST)
     try:
-        template = DesignHistory.objects.get(id=template)
+        template = DesignHistory.objects.get(design=template)
     except DesignHistory.DoesNotExist:
         return Response({'detial': '错误的模板id'}, status=status.HTTP_404_NOT_FOUND)
     DesignHistory.objects.create(
