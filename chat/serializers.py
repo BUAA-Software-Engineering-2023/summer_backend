@@ -8,6 +8,9 @@ class ChatMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChatMessage
         fields = '__all__'
+        extra_kwargs = {
+            'name': {'required': False}
+        }
 
     def get_sender_name(self, chat_message):
         return chat_message.sender.name
