@@ -7,6 +7,7 @@ urlpatterns = [
     path('design/cancel-preview', cancel_preview_view),
     path('design/preview', get_preview_view),
     path('design/templates', get_template_view),
+    path('design/<str:pk>/use-template', use_template_view),
     path('design/insert', insert_template_view),
     path('design/<str:pk>', DesignRetrieveUpdateDestroyView.as_view()),
     path('design-versions', DesignHistoryListCreateView.as_view()),
