@@ -90,9 +90,14 @@ def get_histories_view(request):
 @permission_classes([IsMemberForDocument])
 def restore_history_view(request):
     document_history = DocumentHistory.objects.get(pk=request.data.get('document_history'))
-    DocumentHistory.objects.filter(created_time__gt=document_history.created_time,
-                                   document=document_history.document).update(
-        is_deleted=True)
+    # DocumentHistory.objects.filter(created_time__gt=document_history.created_time,
+    #                                document=document_history.document).update(
+    #     is_deleted=True)
+    DocumentHistory.objects.create(
+        document=document_history.document,
+        content=document_history.content,
+        folder=document_history.folder
+    )
     return Response(status=status.HTTP_200_OK)
 
 
