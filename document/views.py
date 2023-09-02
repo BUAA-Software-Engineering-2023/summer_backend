@@ -95,8 +95,7 @@ def restore_history_view(request):
     #     is_deleted=True)
     DocumentHistory.objects.create(
         document=document_history.document,
-        content=document_history.content,
-        folder=document_history.folder
+        content=document_history.content
     )
     return Response(status=status.HTTP_200_OK)
 
