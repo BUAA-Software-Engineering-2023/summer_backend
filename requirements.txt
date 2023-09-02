@@ -6,4 +6,5 @@ channels
 daphne
 mysqlclient
 pyjwt
+channels-redis
 uwsgi
